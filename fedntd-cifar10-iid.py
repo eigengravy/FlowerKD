@@ -32,44 +32,39 @@ from datetime import datetime
 def apply_transforms(batch):
     """Get transformation for MNIST dataset."""
     transforms = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
-    batch["image"] = [transforms(img) for img in batch["img"]]
+    batch["img"] = [transforms(img) for img in batch["img"]]
     return batch
 
 
 class Net(nn.Module):
-    """Convolutional Neural Network architecture.
-    As described in McMahan 2017 paper :
-    [Communication-Efficient Learning of Deep Networks from
-    Decentralized Data] (https://arxiv.org/pdf/1602.05629.pdf)
-    """
-
-    def __init__(self, num_classes: int) -> None:
+    def __init__(self, num_classes: int):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, 5, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, 5, padding=1)
-        self.pool = nn.MaxPool2d(kernel_size=(2, 2), padding=1)
-        self.fc1 = nn.Linear(64 * 7 * 7, 512)
-        self.fc2 = nn.Linear(512, num_classes)
+        self.network = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),  # output: 64 x 16 x 16
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),  # output: 128 x 8 x 8
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2),  # output: 256 x 4 x 4
+            nn.Flatten(),
+            nn.Linear(256 * 4 * 4, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10),
+        )
 
-    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        """Forward pass of the CNN.
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input Tensor that will pass through the network
-        Returns
-        -------
-        torch.Tensor
-            The resulting Tensor after it has passed through the network
-        """
-        output_tensor = F.relu(self.conv1(input_tensor))
-        output_tensor = self.pool(output_tensor)
-        output_tensor = F.relu(self.conv2(output_tensor))
-        output_tensor = self.pool(output_tensor)
-        output_tensor = torch.flatten(output_tensor, 1)
-        output_tensor = F.relu(self.fc1(output_tensor))
-        output_tensor = self.fc2(output_tensor)
-        return output_tensor
+    def forward(self, xb):
+        return self.network(xb)
 
 
 def train(  # pylint: disable=too-many-arguments
@@ -106,7 +101,7 @@ def train(  # pylint: disable=too-many-arguments
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
-            images, labels = batch["image"].to(device), batch["label"].to(device)
+            images, labels = batch["img"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
             local_logits = net(images)
             with torch.no_grad():
@@ -138,7 +133,7 @@ def test(
     net.eval()
     with torch.no_grad():
         for data in testloader:
-            images, labels = data["image"].to(device), data["label"].to(device)
+            images, labels = data["img"].to(device), data["label"].to(device)
             outputs = net(images)
             loss += criterion(outputs, labels).item()
             _, predicted = torch.max(outputs.data, 1)
@@ -399,7 +394,7 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 50
+    NUM_CLIENTS = 10
 
     mnist_fds = FederatedDataset(dataset="cifar10", partitioners={"train": NUM_CLIENTS})
     centralized_testset = mnist_fds.load_full("test")
@@ -424,14 +419,14 @@ def main() -> None:
         num_clients=NUM_CLIENTS,
         config=fl.server.ServerConfig(num_rounds=3),
         strategy=strategy,
-        client_resources={"num_cpus": 1, "num_gpus": 0.04},
+        client_resources={"num_cpus": 1, "num_gpus": 0},
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
 
     print("................")
     print(history)
 
-    save_path = datetime.now().strftime("%d-%m-%H-%M")
+    save_path = datetime.now().strftime("%d-%m-%H-%M") + "-fedntd-cifar10-iid"
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})
     plot_metric_from_history(
