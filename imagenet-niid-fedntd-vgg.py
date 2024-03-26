@@ -122,19 +122,81 @@ class Net(nn.Module):
         # x = self.fc2(x)
         # return x
 
-        x = F.relu(F.batch_norm(self.conv1(x), training=True))
-        x = self.pool(F.relu(F.batch_norm(self.conv2(x), training=True)))
-        x = F.relu(F.batch_norm(self.conv3(x), training=True))
-        x = self.pool(F.relu(F.batch_norm(self.conv4(x), training=True)))
-        x = F.relu(F.batch_norm(self.conv5(x), training=True))
-        x = F.relu(F.batch_norm(self.conv6(x), training=True))
-        x = self.pool(F.relu(F.batch_norm(self.conv7(x), training=True)))
-        x = F.relu(F.batch_norm(self.conv8(x), training=True))
-        x = F.relu(F.batch_norm(self.conv9(x), training=True))
-        x = self.pool(F.relu(F.batch_norm(self.conv10(x), training=True)))
-        x = F.relu(F.batch_norm(self.conv11(x), training=True))
-        x = F.relu(F.batch_norm(self.conv12(x), training=True))
-        x = self.pool(F.relu(F.batch_norm(self.conv13(x), training=True)))
+        x = F.relu(
+            F.batch_norm(
+                self.conv1(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv2(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv3(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv4(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv5(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv6(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv7(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv8(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv9(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv10(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv11(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv12(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv13(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
         x = x.view(-1, 2048)
         x = F.relu(self.fc(F.dropout(x, 0.5)))
         x = F.relu(self.fc1(F.dropout(x, 0.5)))
