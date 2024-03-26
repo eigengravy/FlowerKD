@@ -297,9 +297,9 @@ class FlowerClient(fl.client.NumPyClient):
 
     def set_parameters(self, parameters):
         """Change the parameters of the model using the given ones."""
-        params_dict = zip(fix_state_dict(self.model.state_dict()).keys(), parameters)
+        params_dict = zip(self.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        self.model.load_state_dict(state_dict)
+        self.model.load_state_dict(fix_state_dict(state_dict))
 
     def get_parameters(self, config: Dict[str, Scalar]):
         """Return the parameters of the current net."""
@@ -375,7 +375,7 @@ def get_evaluate_fn(
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        model.load_state_dict(state_dict)
+        model.load_state_dict(fix_state_dict(state_dict))
         testset = centralized_testset.with_transform(apply_transforms)
         testloader = DataLoader(testset, batch_size=32)
         loss, accuracy = test(model, testloader, device)
