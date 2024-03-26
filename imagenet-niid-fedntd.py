@@ -44,93 +44,31 @@ def apply_transforms(batch):
             transforms.RandomRotation(30),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
         ]
     )
     batch["image"] = [tfs(img) for img in batch["image"]]
     return batch
 
 
-cfg = {
-    "VGG11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
-    "VGG13": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
-    "VGG16": [
-        64,
-        64,
-        "M",
-        128,
-        128,
-        "M",
-        256,
-        256,
-        256,
-        "M",
-        512,
-        512,
-        512,
-        "M",
-        512,
-        512,
-        512,
-        "M",
-    ],
-    "VGG19": [
-        64,
-        64,
-        "M",
-        128,
-        128,
-        "M",
-        256,
-        256,
-        256,
-        256,
-        "M",
-        512,
-        512,
-        512,
-        512,
-        "M",
-        512,
-        512,
-        512,
-        512,
-        "M",
-    ],
-}
-
-
 class Net(nn.Module):
-    def __init__(self, num_classes=200):
+    def __init__(self, num_classes) -> None:
         super(Net, self).__init__()
-        self.features = self._make_layers(cfg["VGG16"])
-        self.classifier = nn.Sequential(
-            nn.Linear(2048, 512),
-            nn.ReLU(),
-            nn.Linear(512, 200),
-        )
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(2704, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, 200)
 
-    def forward(self, x):
-        out = self.features(x)
-        out = out.view(out.size(0), -1)
-        out = self.classifier(out)
-        return out
-
-    def _make_layers(self, cfg):
-        layers = []
-        in_channels = 3
-        for x in cfg:
-            if x == "M":
-                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-            else:
-                layers += [
-                    nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(x),
-                    nn.ReLU(inplace=True),
-                ]
-                in_channels = x
-        layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
-        return nn.Sequential(*layers)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 2704)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 def train(  # pylint: disable=too-many-arguments
@@ -467,13 +405,13 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 1
+    NUM_CLIENTS = 20
 
     mnist_fds = FederatedDataset(
         dataset="zh-plus/tiny-imagenet",
         partitioners={
             "train": DirichletPartitioner(
-                num_partitions=1, alpha=0.5, partition_by="label"
+                num_partitions=20, alpha=0.5, partition_by="label"
             ),
         },
     )
@@ -497,8 +435,8 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=1),
-        client_resources={"num_cpus": 1, "num_gpus": 0},
+        config=fl.server.ServerConfig(num_rounds=100),
+        client_resources={"num_cpus": 2, "num_gpus": 0.2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
