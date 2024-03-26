@@ -381,7 +381,7 @@ def train(  # pylint: disable=too-many-arguments
     beta : float
         Parameter for beta.
     """
-    criterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
+    criterion = nn.CrossEntropyLoss()
     global_net = Net(num_classes).to(device=device)
     global_net.load_state_dict(net.state_dict())
     net.train()
@@ -389,10 +389,7 @@ def train(  # pylint: disable=too-many-arguments
         for batch in trainloader:
             images, labels = batch["img"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
-            local_logits = net(images)
-            with torch.no_grad():
-                global_logits = global_net(images)
-            loss = criterion(local_logits, labels, global_logits)
+            loss = criterion(net(images), labels)
             loss.backward()
             optimizer.step()
 
@@ -728,7 +725,7 @@ def main() -> None:
     print(history)
 
     save_path = (
-        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-fedntd-cifar10-niid"
+        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-fedavg-cifar10-niid"
     )
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})

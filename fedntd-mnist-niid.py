@@ -619,13 +619,20 @@ def plot_metric_from_history(
     # let's extract centralised loss (main metric reported in FedProx paper)
     rounds_loss, values_loss = zip(*hist.losses_centralized)
 
-    _, axs = plt.subplots(nrows=2, ncols=1, sharex="row")
-    axs[0].plot(np.asarray(rounds_loss), np.asarray(values_loss))
-    axs[1].plot(np.asarray(rounds_loss), np.asarray(values))
+    # _, axs = plt.subplots(nrows=2, ncols=1, sharex="row")
+    # axs[0].plot(np.asarray(rounds_loss), np.asarray(values_loss))
+    # axs[1].plot(np.asarray(rounds_loss), np.asarray(values))
 
-    axs[0].set_ylabel("Loss")
-    axs[1].set_ylabel("Accuracy")
+    # axs[0].set_ylabel("Loss")
+    # axs[1].set_ylabel("Accuracy")
 
+    # axs[1].set_ylim(0, 1)
+
+    plt.plot(np.asarray(rounds_loss), np.asarray(values))
+
+    plt.ylabel("Accuracy")
+
+    plt.ylim(0, 1)
     # plt.title(f"{metric_type.capitalize()} Validation - MNIST")
     plt.xlabel("Rounds")
     # plt.legend(loc="lower right")
@@ -696,13 +703,13 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 50
+    NUM_CLIENTS = 10
 
     mnist_fds = FederatedDataset(
         dataset="mnist",
         partitioners={
             "train": DirichletPartitioner(
-                num_partitions=NUM_CLIENTS, alpha=0.5, partition_by="label"
+                num_partitions=500, alpha=0.5, partition_by="label"
             ),
         },
     )
@@ -726,8 +733,8 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=3),
-        client_resources={"num_cpus": 1, "num_gpus": 0.04},
+        config=fl.server.ServerConfig(num_rounds=50),
+        client_resources={"num_cpus": 1, "num_gpus": 0},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
@@ -735,7 +742,9 @@ def main() -> None:
     print("................")
     print(history)
 
-    save_path = datetime.now().strftime("%d-%m-%H-%M")
+    save_path = (
+        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-fedntd-mnist-niid"
+    )
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})
     plot_metric_from_history(

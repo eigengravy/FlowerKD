@@ -31,7 +31,7 @@ from datetime import datetime
 
 def apply_transforms(batch):
     """Get transformation for MNIST dataset."""
-    transforms = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
+    transforms = Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     batch["img"] = [transforms(img) for img in batch["img"]]
     return batch
 
@@ -39,32 +39,21 @@ def apply_transforms(batch):
 class Net(nn.Module):
     def __init__(self, num_classes: int):
         super().__init__()
-        self.network = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),  # output: 64 x 16 x 16
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),  # output: 128 x 8 x 8
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2, 2),  # output: 256 x 4 x 4
-            nn.Flatten(),
-            nn.Linear(256 * 4 * 4, 1024),
-            nn.ReLU(),
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-            nn.Linear(512, 10),
-        )
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
 
-    def forward(self, xb):
-        return self.network(xb)
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)  # flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 
 def train(  # pylint: disable=too-many-arguments
@@ -317,12 +306,18 @@ def plot_metric_from_history(
     # let's extract centralised loss (main metric reported in FedProx paper)
     rounds_loss, values_loss = zip(*hist.losses_centralized)
 
-    _, axs = plt.subplots(nrows=2, ncols=1, sharex="row")
-    axs[0].plot(np.asarray(rounds_loss), np.asarray(values_loss))
-    axs[1].plot(np.asarray(rounds_loss), np.asarray(values))
+    # _, axs = plt.subplots(nrows=2, ncols=1, sharex="row")
+    # axs[0].plot(np.asarray(rounds_loss), np.asarray(values_loss))
+    # axs[1].plot(np.asarray(rounds_loss), np.asarray(values))
 
-    axs[0].set_ylabel("Loss")
-    axs[1].set_ylabel("Accuracy")
+    # axs[0].set_ylabel("Loss")
+    # axs[1].set_ylabel("Accuracy")
+
+    plt.plot(np.asarray(rounds_loss), np.asarray(values))
+
+    plt.ylabel("Accuracy")
+
+    # plt.ylim(0, 1)
 
     # plt.title(f"{metric_type.capitalize()} Validation - MNIST")
     plt.xlabel("Rounds")
@@ -394,9 +389,9 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 10
+    NUM_CLIENTS = 3
 
-    mnist_fds = FederatedDataset(dataset="cifar10", partitioners={"train": NUM_CLIENTS})
+    mnist_fds = FederatedDataset(dataset="cifar10", partitioners={"train": 10})
     centralized_testset = mnist_fds.load_full("test")
 
     def fit_config(server_round: int) -> Dict[str, Scalar]:
@@ -417,7 +412,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=3),
+        config=fl.server.ServerConfig(num_rounds=50),
         strategy=strategy,
         client_resources={"num_cpus": 1, "num_gpus": 0},
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
@@ -426,7 +421,9 @@ def main() -> None:
     print("................")
     print(history)
 
-    save_path = datetime.now().strftime("%d-%m-%H-%M") + "-fedntd-cifar10-iid"
+    save_path = (
+        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-fedntd-cifar10-iid"
+    )
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})
     plot_metric_from_history(
