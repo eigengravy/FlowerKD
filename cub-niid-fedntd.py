@@ -466,7 +466,7 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 10
+    NUM_CLIENTS = 3
 
     ds = load_dataset("imagefolder", data_dir="data/cub-200-2011/", split="train")
     ds_split_train_test = ds.train_test_split(test_size=0.2)
