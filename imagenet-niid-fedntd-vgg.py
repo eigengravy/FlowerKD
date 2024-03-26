@@ -80,7 +80,9 @@ class Net(nn.Module):
         self.batch_norm12 = nn.BatchNorm2d(512)
         self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
         self.batch_norm13 = nn.BatchNorm2d(512)
+        self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(2048, 2048)
+        self.dropout1 = nn.Dropout(0.5)
         self.fc1 = nn.Linear(2048, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
@@ -159,8 +161,8 @@ class Net(nn.Module):
         x = F.relu(self.batch_norm12(self.conv12(x)))
         x = self.pool(F.relu(self.batch_norm13(self.conv13(x))), 2, 2)
         x = x.view(-1, 2048)
-        x = F.relu(self.fc(F.dropout(x, 0.5)))
-        x = F.relu(self.fc1(F.dropout(x, 0.5)))
+        x = F.relu(self.fc(self.dropout(x, 0.5)))
+        x = F.relu(self.fc1(self.dropout1(x, 0.5)))
         x = self.fc2(x)
         return x
         # out = self.layer1(x)
