@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import copy
 import re
 
 import flwr as fl
@@ -62,38 +63,37 @@ def fix_state_dict(state_dict):
             new_key = res.group(1) + res.group(2)
             state_dict[new_key] = state_dict[key]
             del state_dict[key]
-    return state_dict
 
 
 class Net(nn.Module):
     def __init__(self, num_classes=200) -> None:
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
-        self.batch_norm1 = nn.BatchNorm2d(64)
+        # self.batch_norm1 = nn.BatchNorm2d(64)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        self.batch_norm2 = nn.BatchNorm2d(64)
+        # self.batch_norm2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.batch_norm3 = nn.BatchNorm2d(128)
+        # self.batch_norm3 = nn.BatchNorm2d(128)
         self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
-        self.batch_norm4 = nn.BatchNorm2d(128)
+        # self.batch_norm4 = nn.BatchNorm2d(128)
         self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        self.batch_norm5 = nn.BatchNorm2d(256)
+        # self.batch_norm5 = nn.BatchNorm2d(256)
         self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.batch_norm6 = nn.BatchNorm2d(256)
+        # self.batch_norm6 = nn.BatchNorm2d(256)
         self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        self.batch_norm7 = nn.BatchNorm2d(256)
+        # self.batch_norm7 = nn.BatchNorm2d(256)
         self.conv8 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm8 = nn.BatchNorm2d(512)
+        # self.batch_norm8 = nn.BatchNorm2d(512)
         self.conv9 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm9 = nn.BatchNorm2d(512)
+        # self.batch_norm9 = nn.BatchNorm2d(512)
         self.conv10 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm10 = nn.BatchNorm2d(512)
+        # self.batch_norm10 = nn.BatchNorm2d(512)
         self.conv11 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm11 = nn.BatchNorm2d(512)
+        # self.batch_norm11 = nn.BatchNorm2d(512)
         self.conv12 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm12 = nn.BatchNorm2d(512)
+        # self.batch_norm12 = nn.BatchNorm2d(512)
         self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        self.batch_norm13 = nn.BatchNorm2d(512)
+        # self.batch_norm13 = nn.BatchNorm2d(512)
         # self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(2048, 2048)
         # self.dropout1 = nn.Dropout(0.5)
@@ -190,7 +190,10 @@ def train(  # pylint: disable=too-many-arguments
     """
     criterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
     global_net = Net(num_classes).to(device=device)
-    global_net.load_state_dict(fix_state_dict(net.state_dict()))
+
+    global_net_state_dict = copy.deepcopy(net.state_dict())
+    # fix_state_dict(global_net_state_dict)
+    global_net.load_state_dict(global_net_state_dict)
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
@@ -299,7 +302,9 @@ class FlowerClient(fl.client.NumPyClient):
         """Change the parameters of the model using the given ones."""
         params_dict = zip(self.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        self.model.load_state_dict(fix_state_dict(state_dict))
+        # fix_state_dict(state_dict)
+        print(state_dict.keys())
+        self.model.load_state_dict(state_dict)
 
     def get_parameters(self, config: Dict[str, Scalar]):
         """Return the parameters of the current net."""
@@ -375,7 +380,8 @@ def get_evaluate_fn(
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        model.load_state_dict(fix_state_dict(state_dict))
+        # fix_state_dict(state_dict)
+        model.load_state_dict(state_dict)
         testset = centralized_testset.with_transform(apply_transforms)
         testloader = DataLoader(testset, batch_size=32)
         loss, accuracy = test(model, testloader, device)
