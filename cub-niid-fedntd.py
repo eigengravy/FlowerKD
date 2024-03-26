@@ -39,8 +39,8 @@ def apply_transforms(batch):
             transforms.RandomCrop(227),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
             transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ]
     )
     batch["image"] = [tfs(img) for img in batch["image"]]
@@ -147,7 +147,6 @@ class Net(nn.Module):
             )
         )
         x = x.view(-1, 7 * 7 * 512)
-        print(x.size())
         x = F.relu(self.fc(F.dropout(x, 0.5)))
         x = F.relu(self.fc1(F.dropout(x, 0.5)))
         x = self.fc2(x)
