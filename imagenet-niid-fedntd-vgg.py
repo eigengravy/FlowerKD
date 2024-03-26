@@ -53,7 +53,7 @@ def apply_transforms(batch):
 
 class Net(nn.Module):
     def __init__(self, num_classes=200):
-        super(Net).__init__()
+        super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
@@ -71,11 +71,8 @@ class Net(nn.Module):
         self.fc1 = nn.Linear(2048, 512)
         self.fc2 = nn.Linear(512, num_classes)
 
-        # self.layer3 = nn.Sequential(
-        #     nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-        # )
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
         # self.layer4 = nn.Sequential(
         #     nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
         #     nn.BatchNorm2d(128),
@@ -136,18 +133,18 @@ class Net(nn.Module):
 
     def forward(self, x):
         x = F.relu(F.batch_norm(self.conv1(x)))
-        x = F.max_pool2d(F.relu(F.batch_norm(self.conv2(x))), 2, 2)
+        x = self.pool(F.relu(F.batch_norm(self.conv2(x))), 2, 2)
         x = F.relu(F.batch_norm(self.conv3(x)))
-        x = F.max_pool2d(F.relu(F.batch_norm(self.conv4(x))), 2, 2)
+        x = self.pool(F.relu(F.batch_norm(self.conv4(x))), 2, 2)
         x = F.relu(F.batch_norm(self.conv5(x)))
         x = F.relu(F.batch_norm(self.conv6(x)))
-        x = F.max_pool2d(F.relu(F.batch_norm(self.conv7(x))), 2, 2)
+        x = self.pool(F.relu(F.batch_norm(self.conv7(x))), 2, 2)
         x = F.relu(F.batch_norm(self.conv8(x)))
         x = F.relu(F.batch_norm(self.conv9(x)))
         x = F.relu(F.batch_norm(self.conv10(x)))
         x = F.relu(F.batch_norm(self.conv11(x)))
         x = F.relu(F.batch_norm(self.conv12(x)))
-        x = F.max_pool2d(F.relu(F.batch_norm(self.conv13(x))), 2, 2)
+        x = self.pool(F.relu(F.batch_norm(self.conv13(x))), 2, 2)
         x = x.view(-1, 2048)
         x = F.relu(self.fc(F.dropout(x, 0.5)))
         x = F.relu(self.fc1(F.dropout(x, 0.5)))
