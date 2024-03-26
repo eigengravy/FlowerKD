@@ -41,8 +41,8 @@ def apply_transforms(batch):
     """Get transformation for MNIST dataset."""
     tfs = transforms.Compose(
         [
-            transforms.RandomRotation(30),
-            transforms.RandomHorizontalFlip(),
+            # transforms.RandomRotation(30),
+            # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
         ]
@@ -366,7 +366,7 @@ def get_evaluate_fn(
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict)
         testset = centralized_testset.with_transform(apply_transforms)
-        testloader = DataLoader(testset, batch_size=50)
+        testloader = DataLoader(testset, batch_size=32)
         loss, accuracy = test(model, testloader, device)
         return loss, {"accuracy": accuracy}
 
