@@ -44,7 +44,8 @@ def apply_transforms(batch):
     tfs = transforms.Compose(
         [
             transforms.RandomRotation(30),
-            transforms.RandomResizedCrop(224),
+            transforms.Resize(256),
+            transforms.RandomCrop(227),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
@@ -59,32 +60,18 @@ class Net(nn.Module):
     def __init__(self, num_classes=200) -> None:
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm1 = nn.BatchNorm2d(64)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm3 = nn.BatchNorm2d(128)
         self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm4 = nn.BatchNorm2d(128)
         self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm5 = nn.BatchNorm2d(256)
         self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm6 = nn.BatchNorm2d(256)
         self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm7 = nn.BatchNorm2d(256)
         self.conv8 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm8 = nn.BatchNorm2d(512)
         self.conv9 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm9 = nn.BatchNorm2d(512)
         self.conv10 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm10 = nn.BatchNorm2d(512)
         self.conv11 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm11 = nn.BatchNorm2d(512)
         self.conv12 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm12 = nn.BatchNorm2d(512)
         self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm13 = nn.BatchNorm2d(512)
-        # self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(7 * 7 * 512, 4096)
         self.fc1 = nn.Linear(4096, 4096)
         self.fc2 = nn.Linear(4096, num_classes)
@@ -92,24 +79,6 @@ class Net(nn.Module):
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x = F.relu(self.conv1(x))
-        # x = self.pool(F.relu((self.conv2(x))))
-        # x = F.relu((self.conv3(x)))
-        # x = self.pool(F.relu((self.conv4(x))))
-        # x = F.relu((self.conv5(x)))
-        # x = F.relu((self.conv6(x)))
-        # x = self.pool(F.relu((self.conv7(x))))
-        # x = F.relu((self.conv8(x)))
-        # x = F.relu((self.conv9(x)))
-        # x = self.pool(F.relu((self.conv10(x))))
-        # x = F.relu((self.conv11(x)))
-        # x = F.relu((self.conv12(x)))
-        # x = self.pool(F.relu((self.conv13(x))))
-        # x = x.view(-1, 2048)
-        # x = F.relu(self.fc(x))
-        # x = F.relu(self.fc1(x))
-        # x = self.fc2(x)
-        # return x
 
         x = F.relu(
             F.batch_norm(
@@ -192,24 +161,6 @@ class Net(nn.Module):
         x = self.fc2(x)
 
         return x
-        # out = self.layer1(x)
-        # out = self.layer2(out)
-        # out = self.layer3(out)
-        # out = self.layer4(out)
-        # out = self.layer5(out)
-        # out = self.layer6(out)
-        # out = self.layer7(out)
-        # out = self.layer8(out)
-        # out = self.layer9(out)
-        # out = self.layer10(out)
-        # out = self.layer11(out)
-        # out = self.layer12(out)
-        # out = self.layer13(out)
-        # out = out.reshape(out.size(0), -1)
-        # out = self.fc(out)
-        # out = self.fc1(out)
-        # out = self.fc2(out)
-        # return out
 
 
 def train(  # pylint: disable=too-many-arguments
@@ -246,7 +197,7 @@ def train(  # pylint: disable=too-many-arguments
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
-            images, labels = batch["image"].to(device), batch["text"].to(device)
+            images, labels = batch["image"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
             loss = criterion(net(images), labels)
             loss.backward()
@@ -275,7 +226,7 @@ def test(
     net.eval()
     with torch.no_grad():
         for data in testloader:
-            images, labels = data["image"].to(device), data["text"].to(device)
+            images, labels = data["image"].to(device), data["label"].to(device)
             outputs = net(images)
             loss += criterion(outputs, labels).item()
             _, predicted = torch.max(outputs.data, 1)
@@ -294,7 +245,7 @@ class NTDLoss(nn.Module):
     [Preservation of the Global Knowledge by Not-True Distillation in Federated Learning](https://arxiv.org/pdf/2106.03097.pdf)
     """
 
-    def __init__(self, num_classes=10, tau=3, beta=1):
+    def __init__(self, num_classes=200, tau=3, beta=1):
         super(NTDLoss, self).__init__()
         self.CE = nn.CrossEntropyLoss()
         self.KLDiv = nn.KLDivLoss(reduction="batchmean")
@@ -340,7 +291,7 @@ class FlowerClient(fl.client.NumPyClient):
 
         self.trainloader = trainloader
         self.valloader = valloader
-        self.model = Net(num_classes=10)
+        self.model = Net(num_classes=200)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
@@ -367,7 +318,7 @@ class FlowerClient(fl.client.NumPyClient):
             device=self.device,
             tau=1.0,
             beta=1.0,
-            num_classes=10,
+            num_classes=200,
         )
         return self.get_parameters({}), len(self.trainloader), {}
 
@@ -419,14 +370,14 @@ def get_evaluate_fn(
     def evaluate_fn(
         server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
-        model = Net(num_classes=10)
+        model = Net(num_classes=200)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict, strict=True)
         testset = centralized_testset.with_transform(apply_transforms)
-        testloader = DataLoader(testset, batch_size=50)
+        testloader = DataLoader(testset, batch_size=32)
         loss, accuracy = test(model, testloader, device)
         return loss, {"accuracy": accuracy}
 
