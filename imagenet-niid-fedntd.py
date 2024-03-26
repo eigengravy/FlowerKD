@@ -105,9 +105,7 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.features = self._make_layers(cfg["VGG16"])
         self.classifier = nn.Sequential(
-            nn.Linear(25088, 4096),
-            nn.ReLU(),
-            nn.Linear(4096, 512),
+            nn.Linear(2048, 512),
             nn.ReLU(),
             nn.Linear(512, 200),
         )
@@ -220,7 +218,7 @@ class NTDLoss(nn.Module):
     [Preservation of the Global Knowledge by Not-True Distillation in Federated Learning](https://arxiv.org/pdf/2106.03097.pdf)
     """
 
-    def __init__(self, num_classes=10, tau=3, beta=1):
+    def __init__(self, num_classes=200, tau=3, beta=1):
         super(NTDLoss, self).__init__()
         self.CE = nn.CrossEntropyLoss()
         self.KLDiv = nn.KLDivLoss(reduction="batchmean")
@@ -266,7 +264,7 @@ class FlowerClient(fl.client.NumPyClient):
 
         self.trainloader = trainloader
         self.valloader = valloader
-        self.model = Net(num_classes=10)
+        self.model = Net(num_classes=200)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
@@ -293,7 +291,7 @@ class FlowerClient(fl.client.NumPyClient):
             device=self.device,
             tau=1.0,
             beta=1.0,
-            num_classes=10,
+            num_classes=200,
         )
         return self.get_parameters({}), len(self.trainloader), {}
 
@@ -345,7 +343,7 @@ def get_evaluate_fn(
     def evaluate_fn(
         server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
-        model = Net(num_classes=10)
+        model = Net(num_classes=200)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
