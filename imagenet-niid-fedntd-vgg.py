@@ -463,13 +463,13 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 20
+    NUM_CLIENTS = 10
 
     mnist_fds = FederatedDataset(
         dataset="zh-plus/tiny-imagenet",
         partitioners={
             "train": DirichletPartitioner(
-                num_partitions=20, alpha=0.5, partition_by="label"
+                num_partitions=10, alpha=0.5, partition_by="label"
             ),
         },
     )
@@ -494,7 +494,7 @@ def main() -> None:
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
         config=fl.server.ServerConfig(num_rounds=100),
-        client_resources={"num_cpus": 2, "num_gpus": 0.2},
+        client_resources={"num_cpus": 2, "num_gpus": 0.5},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
