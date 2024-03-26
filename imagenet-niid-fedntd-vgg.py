@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import re
 
 import flwr as fl
 import torch
@@ -49,6 +50,19 @@ def apply_transforms(batch):
     )
     batch["image"] = [tfs(img) for img in batch["image"]]
     return batch
+
+
+def fix_state_dict(state_dict):
+    pattern = re.compile(
+        r"^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$"
+    )
+    for key in list(state_dict.keys()):
+        res = pattern.match(key)
+        if res:
+            new_key = res.group(1) + res.group(2)
+            state_dict[new_key] = state_dict[key]
+            del state_dict[key]
+    return state_dict
 
 
 class Net(nn.Module):
@@ -176,7 +190,7 @@ def train(  # pylint: disable=too-many-arguments
     """
     criterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
     global_net = Net(num_classes).to(device=device)
-    global_net.load_state_dict(net.state_dict())
+    global_net.load_state_dict(fix_state_dict(net.state_dict()))
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
@@ -283,7 +297,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def set_parameters(self, parameters):
         """Change the parameters of the model using the given ones."""
-        params_dict = zip(self.model.state_dict().keys(), parameters)
+        params_dict = zip(fix_state_dict(self.model.state_dict()).keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         self.model.load_state_dict(state_dict)
 
