@@ -131,7 +131,6 @@ class Net(nn.Module):
         x = F.relu(self.fc(F.dropout(x, 0.5)))
         x = F.relu(self.fc1(F.dropout(x, 0.5)))
         x = self.fc2(x)
-
         return x
 
 
@@ -140,17 +139,15 @@ def train(
     trainloader: DataLoader,
     optimizer: Optimizer,
     device: torch.device,
-    epochs: int,
 ) -> None:
     criterion = nn.CrossEntropyLoss()
     net.train()
-    for _ in range(epochs):
-        for batch in tqdm(trainloader, leave=False):
-            images, labels = batch["image"].to(device), batch["label"].to(device)
-            optimizer.zero_grad()
-            loss = criterion(net(images), labels)
-            loss.backward()
-            optimizer.step()
+    for batch in tqdm(trainloader, leave=False):
+        images, labels = batch["image"].to(device), batch["label"].to(device)
+        optimizer.zero_grad()
+        loss = criterion(net(images), labels)
+        loss.backward()
+        optimizer.step()
 
 
 def test(
@@ -194,7 +191,7 @@ optim = torch.optim.Adam(model.parameters())
 loss, accuracy = test(model, testloader, device)
 results = [(loss, accuracy)]
 for _ in (bar := tqdm(range(100), desc=f"Loss: {loss}, Accuracy: {accuracy}")):
-    train(model, trainloader, optim, device, 1)
+    train(model, trainloader, optim, device)
     loss, accuracy = test(model, testloader, device)
     bar.set_description(f"Loss: {loss}, Accuracy: {accuracy}")
     results.append((loss, accuracy))
