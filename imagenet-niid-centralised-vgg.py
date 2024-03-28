@@ -196,7 +196,7 @@ optim = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
 loss, accuracy = test(model, testloader, device)
 results = [(loss, accuracy)]
-for _ in (bar := tqdm(range(500), desc=f"Loss: {loss}, Accuracy: {accuracy}")):
+for _ in (bar := tqdm(range(100), desc=f"Loss: {loss}, Accuracy: {accuracy}")):
     train(model, trainloader, optim, device, 1, 200)
     loss, accuracy = test(model, testloader, device)
     bar.set_description(f"Loss: {loss}, Accuracy: {accuracy}")
