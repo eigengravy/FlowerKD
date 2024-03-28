@@ -267,6 +267,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.fednet = Net(num_classes=200).to(self.device)
         self.distillnet = Net(num_classes=200).to(self.device)
+        self.fit_count = 0
 
     def set_parameters(self, net, parameters):
         """Change the parameters of the model using the given ones."""
@@ -278,6 +279,7 @@ class FlowerClient(fl.client.NumPyClient):
         return [val.cpu().numpy() for _, val in self.fednet.state_dict().items()]
 
     def fit(self, parameters, config):
+        self.fit_count += 1
         self.set_parameters(self.fednet, parameters)  # ?? TODO: neeeded? confirm
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
@@ -290,18 +292,19 @@ class FlowerClient(fl.client.NumPyClient):
             epochs=epochs,
             device=self.device,
         )
-        optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
-        distill(
-            self.distillnet,
-            teacher,
-            self.trainloader,
-            optim,
-            epochs=10 * epochs,
-            tau=3,
-            beta=1,
-            num_classes=200,
-            device=self.device,
-        )
+        if self.fit_count > 10:
+            optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
+            distill(
+                self.distillnet,
+                teacher,
+                self.trainloader,
+                optim,
+                epochs=5 * epochs,
+                tau=3,
+                beta=1,
+                num_classes=200,
+                device=self.device,
+            )
         return self.get_parameters({}), len(self.trainloader), {}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
