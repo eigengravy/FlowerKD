@@ -202,7 +202,9 @@ for _ in tqdm(range(500)):
     print(f"Loss: {loss}, Accuracy: {accuracy}")
 
 
-with open(f"outputs/imagenet-niid-fedavg-{datetime.now().strftime("%d-%m-%H-%M")}.csv", "w") as f:
+with open(
+    f"outputs/imagenet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}.csv", "w"
+) as f:
     writer = csv.writer(f)
     writer.writerow(["loss", "accuracy"])
     for loss, accuracy in results:
