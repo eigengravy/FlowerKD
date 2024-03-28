@@ -171,11 +171,12 @@ def test(
     return loss, accuracy
 
 
-dataset_splits = load_dataset("zh-plus/tiny-imagenet", split="train").train_test_split(
-    test_size=0.1
-)
-trainset = dataset_splits["train"]
-valset = dataset_splits["test"]
+# dataset_splits = load_dataset("zh-plus/tiny-imagenet", split="train").train_test_split(
+#     test_size=0.1
+# )
+# trainset = dataset_splits["train"]
+# valset = dataset_splits["test"]
+trainset = load_dataset("zh-plus/tiny-imagenet", split="train")
 testset = load_dataset("zh-plus/tiny-imagenet", split="valid")
 trainloader = DataLoader(
     trainset.with_transform(apply_transforms), batch_size=32, shuffle=True
@@ -185,7 +186,7 @@ testloader = DataLoader(testset.with_transform(apply_transforms), batch_size=32)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = Net(num_classes=200).to(device)
-optim = torch.optim.Adam(model.parameters())
+optim = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
 
 loss, accuracy = test(model, testloader, device)
