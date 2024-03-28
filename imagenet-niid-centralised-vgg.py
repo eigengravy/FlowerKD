@@ -186,7 +186,7 @@ testset = load_dataset("zh-plus/tiny-imagenet", split="valid")
 trainloader = DataLoader(
     trainset.with_transform(apply_transforms), batch_size=32, shuffle=True
 )
-testloader = DataLoader(testset, batch_size=32)
+testloader = DataLoader(testset.with_transform(apply_transforms), batch_size=32)
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
