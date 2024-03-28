@@ -278,7 +278,7 @@ class FlowerClient(fl.client.NumPyClient):
         return [val.cpu().numpy() for _, val in self.fednet.state_dict().items()]
 
     def fit(self, parameters, config):
-        # self.set_parameters(self.fednet, parameters) ?? TODO: neeeded? confirm
+        self.set_parameters(self.fednet, parameters)  # ?? TODO: neeeded? confirm
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
         lr, epochs = config["lr"], config["epochs"]
