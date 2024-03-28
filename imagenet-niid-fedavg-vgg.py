@@ -555,7 +555,7 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 20
+    NUM_CLIENTS = 10
 
     mnist_fds = FederatedDataset(
         dataset="zh-plus/tiny-imagenet",
@@ -585,7 +585,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=500),
+        config=fl.server.ServerConfig(num_rounds=100),
         client_resources={"num_cpus": 2, "num_gpus": 0.5},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
