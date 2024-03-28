@@ -394,6 +394,8 @@ def plot_metric_from_history(
     plt.savefig(Path(save_plot_path) / Path(f"{metric_type}_metrics{suffix}.png"))
     plt.close()
 
+    print(hist.losses_distributed)
+    print(hist.metrics_distributed["accuracy"])
     curr_time = datetime.now().strftime("%d-%m-%H-%M")
     os.mkdir(f"outputs/imagenet-niid-fedmix-{curr_time}")
     with open(
