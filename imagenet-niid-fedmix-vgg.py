@@ -404,8 +404,8 @@ def plot_metric_from_history(
     ) as f:
         writer = csv.writer(f)
         writer.writerow(["loss", "accuracy"])
-        (_, v_loss), (_, v_accuracy) = zip(
-            *hist.losses_distributed, *hist.metrics_distributed["accuracy"]
+        (_, v_loss), (_, v_accuracy) = zip(*hist.losses_distributed), zip(
+            *hist.metrics_distributed["accuracy"]
         )
         writer.writerows(zip(v_loss, v_accuracy))
 
