@@ -394,21 +394,6 @@ def plot_metric_from_history(
     plt.savefig(Path(save_plot_path) / Path(f"{metric_type}_metrics{suffix}.png"))
     plt.close()
 
-    print(hist.losses_distributed)
-    print(hist.metrics_distributed["accuracy"])
-    curr_time = datetime.now().strftime("%d-%m-%H-%M")
-    os.mkdir(f"outputs/imagenet-niid-fedmix-{curr_time}")
-    with open(
-        f"outputs/imagenet-niid-fedmix-{curr_time}/results.csv",
-        "w",
-    ) as f:
-        writer = csv.writer(f)
-        writer.writerow(["loss", "accuracy"])
-        (_, v_loss), (_, v_accuracy) = zip(*hist.losses_distributed), zip(
-            *hist.metrics_distributed["accuracy"]
-        )
-        writer.writerows(zip(v_loss, v_accuracy))
-
 
 def save_results_as_pickle(
     history: History,
@@ -470,6 +455,17 @@ def save_results_as_pickle(
     with open(str(path), "wb") as handle:
         pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    with open(
+        f"{file_path}/results.csv",
+        "w",
+    ) as f:
+        writer = csv.writer(f)
+        writer.writerow(["loss", "accuracy"])
+        (_, v_loss), (_, v_accuracy) = zip(*history.losses_distributed), zip(
+            *history.metrics_distributed["accuracy"]
+        )
+        writer.writerows(zip(v_loss, v_accuracy))
+
 
 class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
     def aggregate_evaluate(
@@ -530,7 +526,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=1),
+        config=fl.server.ServerConfig(num_rounds=100),
         client_resources={"num_cpus": 4, "num_gpus": 2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
