@@ -141,11 +141,8 @@ def train(
     optimizer: Optimizer,
     device: torch.device,
     epochs: int,
-    num_classes: int,
 ) -> None:
     criterion = nn.CrossEntropyLoss()
-    global_net = Net(num_classes).to(device=device)
-    global_net.load_state_dict(net.state_dict())
     net.train()
     for _ in range(epochs):
         for batch in tqdm(trainloader, leave=False):
@@ -191,13 +188,13 @@ testloader = DataLoader(testset.with_transform(apply_transforms), batch_size=32)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = Net(num_classes=200).to(device)
-optim = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+optim = torch.optim.Adam(model.parameters())
 
 
 loss, accuracy = test(model, testloader, device)
 results = [(loss, accuracy)]
 for _ in (bar := tqdm(range(100), desc=f"Loss: {loss}, Accuracy: {accuracy}")):
-    train(model, trainloader, optim, device, 1, 200)
+    train(model, trainloader, optim, device, 1)
     loss, accuracy = test(model, testloader, device)
     bar.set_description(f"Loss: {loss}, Accuracy: {accuracy}")
     results.append((loss, accuracy))
