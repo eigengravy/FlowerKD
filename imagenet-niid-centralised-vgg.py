@@ -205,9 +205,10 @@ for _ in (bar := tqdm(range(100), desc=f"Loss: {loss}, Accuracy: {accuracy}")):
 
 import os
 
-os.mkdir(f"outputs/imagnet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}")
+curr_time = datetime.now().strftime("%d-%m-%H-%M")
+os.mkdir(f"outputs/imagenet-niid-centralised-{curr_time}")
 with open(
-    f"outputs/imagenet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}/results.csv",
+    f"outputs/imagenet-niid-centralised-{curr_time}/results.csv",
     "w",
 ) as f:
     writer = csv.writer(f)

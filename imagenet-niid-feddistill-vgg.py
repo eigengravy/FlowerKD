@@ -487,7 +487,9 @@ def main() -> None:
     print("................")
     print(history)
 
-    save_path = "outputs/imagenet-niid-fedntd-" + datetime.now().strftime("%d-%m-%H-%M")
+    save_path = "outputs/imagenet-niid-feddistill-" + datetime.now().strftime(
+        "%d-%m-%H-%M"
+    )
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})
     plot_metric_from_history(
