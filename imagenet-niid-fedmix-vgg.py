@@ -305,8 +305,8 @@ class FlowerClient(fl.client.NumPyClient):
         return self.get_parameters({}), len(self.trainloader), {}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
-        loss, accuracy = test(self.fednet, self.valloader, device=self.device)
-        return float(loss), len(self.valloader), {"accuracy": accuracy}
+        loss, accuracy = test(self.distillnet, self.trainloader, device=self.device)
+        return float(loss), len(self.trainloader), {"accuracy": accuracy}
 
 
 def get_client_fn(dataset: FederatedDataset):
