@@ -225,7 +225,6 @@ class Net(nn.Module):
 
 def train(  # pylint: disable=too-many-arguments
     net: nn.Module,
-    teacher: nn.Module,
     trainloader: DataLoader,
     optimizer: Optimizer,
     device: torch.device,
@@ -234,7 +233,30 @@ def train(  # pylint: disable=too-many-arguments
     beta: float,
     num_classes: int,
 ) -> None:
+    """Train the network on the training set.
+    Parameters
+    ----------
+    net : nn.Module
+        The neural network to train.
+    trainloader : DataLoader
+        The DataLoader containing the data to train the network on.
+    device : torch.device
+        The device on which the model should be trained, either 'cpu' or 'cuda'.
+    epochs : int
+        The number of epochs the model should be trained for.
+    learning_rate : float
+        The learning rate for the SGD optimizer.
+    tau : float
+        Parameter for tau.
+    beta : float
+        Parameter for beta.
+    """
     criterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
+    global_net = Net(num_classes).to(device=device)
+
+    global_net_state_dict = copy.deepcopy(net.state_dict())
+    # fix_state_dict(global_net_state_dict)
+    global_net.load_state_dict(global_net_state_dict)
     net.train()
     for _ in range(epochs):
         for batch in trainloader:
@@ -242,7 +264,7 @@ def train(  # pylint: disable=too-many-arguments
             optimizer.zero_grad()
             local_logits = net(images)
             with torch.no_grad():
-                global_logits = teacher(images)
+                global_logits = global_net(images)
             loss = criterion(local_logits, labels, global_logits)
             loss.backward()
             optimizer.step()
@@ -251,6 +273,20 @@ def train(  # pylint: disable=too-many-arguments
 def test(
     net: nn.Module, testloader: DataLoader, device: torch.device
 ) -> Tuple[float, float]:
+    """Evaluate the network on the entire test set.
+    Parameters
+    ----------
+    net : nn.Module
+        The neural network to test.
+    testloader : DataLoader
+        The DataLoader containing the data to test the network on.
+    device : torch.device
+        The device on which the model should be tested, either 'cpu' or 'cuda'.
+    Returns
+    -------
+    Tuple[float, float]
+        The loss and the accuracy of the input model on the given data.
+    """
     criterion = torch.nn.CrossEntropyLoss()
     correct, total, loss = 0, 0, 0.0
     net.eval()
@@ -270,6 +306,11 @@ def test(
 
 
 class NTDLoss(nn.Module):
+    """Not-true Distillation Loss.
+    As described in:
+    [Preservation of the Global Knowledge by Not-True Distillation in Federated Learning](https://arxiv.org/pdf/2106.03097.pdf)
+    """
+
     def __init__(self, num_classes=200, tau=3, beta=1):
         super(NTDLoss, self).__init__()
         self.CE = nn.CrossEntropyLoss()
@@ -279,14 +320,18 @@ class NTDLoss(nn.Module):
         self.beta = beta
 
     def forward(self, local_logits, targets, global_logits):
+        """Forward pass."""
         ce_loss = self.CE(local_logits, targets)
         local_logits = self._refine_as_not_true(local_logits, targets)
         local_probs = F.log_softmax(local_logits / self.tau, dim=1)
         with torch.no_grad():
             global_logits = self._refine_as_not_true(global_logits, targets)
             global_probs = torch.softmax(global_logits / self.tau, dim=1)
+
         ntd_loss = (self.tau**2) * self.KLDiv(local_probs, global_probs)
+
         loss = ce_loss + self.beta * ntd_loss
+
         return loss
 
     def _refine_as_not_true(
@@ -298,11 +343,15 @@ class NTDLoss(nn.Module):
         nt_positions = nt_positions.repeat(logits.size(0), 1)
         nt_positions = nt_positions[nt_positions[:, :] != targets.view(-1, 1)]
         nt_positions = nt_positions.view(-1, self.num_classes - 1)
+
         logits = torch.gather(logits, 1, nt_positions)
+
         return logits
 
 
 class FlowerClient(fl.client.NumPyClient):
+    """Standard Flower client for CNN training."""
+
     def __init__(self, trainloader, valloader) -> None:
         super().__init__()
 
@@ -312,22 +361,23 @@ class FlowerClient(fl.client.NumPyClient):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
-    def set_parameters(self, net, parameters):
-        params_dict = zip(net.state_dict().keys(), parameters)
+    def set_parameters(self, parameters):
+        """Change the parameters of the model using the given ones."""
+        params_dict = zip(self.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        net.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict)
 
     def get_parameters(self, config: Dict[str, Scalar]):
+        """Return the parameters of the current net."""
         return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
 
     def fit(self, parameters, config):
-        teacher = Net(num_classes=200).to(self.device)
-        self.set_parameters(teacher, parameters)
+        """Implement distributed fit function for a given client."""
+        self.set_parameters(parameters)
         lr, epochs = config["lr"], config["epochs"]
         optim = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=0.9)
         train(
             self.model,
-            teacher,
             self.trainloader,
             optim,
             epochs=epochs,
@@ -339,13 +389,20 @@ class FlowerClient(fl.client.NumPyClient):
         return self.get_parameters({}), len(self.trainloader), {}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
-        self.set_parameters(self.model, parameters)
+        """Implement distributed evaluation for a given client."""
+        self.set_parameters(parameters)
         loss, accuracy = test(self.model, self.valloader, device=self.device)
         return float(loss), len(self.valloader), {"accuracy": accuracy}
 
 
 def get_client_fn(dataset: FederatedDataset):
+    """Return a function to construct a client.
+    The VirtualClientEngine will execute this function whenever a client is sampled by
+    the strategy to participate.
+    """
+
     def client_fn(cid: str) -> fl.client.Client:
+        """Construct a FlowerClient with its own dataset partition."""
         client_dataset = dataset.load_partition(int(cid), "train")
         client_dataset_splits = client_dataset.train_test_split(test_size=0.1)
         trainset = client_dataset_splits["train"]
@@ -364,6 +421,18 @@ def get_evaluate_fn(
 ) -> Callable[
     [int, NDArrays, Dict[str, Scalar]], Optional[Tuple[float, Dict[str, Scalar]]]
 ]:
+    """Generate the function for centralized evaluation.
+    Parameters
+    ----------
+    centralized_testset : Dataset
+        The dataset to test the model with.
+    Returns
+    -------
+    Callable[ [int, NDArrays, Dict[str, Scalar]],
+                Optional[Tuple[float, Dict[str, Scalar]]] ]
+        The centralized evaluation function.
+    """
+
     def evaluate_fn(
         server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
@@ -387,6 +456,16 @@ def plot_metric_from_history(
     save_plot_path: str,
     suffix: Optional[str] = "",
 ) -> None:
+    """Plot from Flower server History.
+    Parameters
+    ----------
+    hist : History
+        Object containing evaluation for all rounds.
+    save_plot_path : str
+        Folder to save the plot to.
+    suffix: Optional[str]
+        Optional string to add at the end of the filename for the plot.
+    """
     metric_type = "centralized"
     metric_dict = (
         hist.metrics_centralized
@@ -394,11 +473,28 @@ def plot_metric_from_history(
         else hist.metrics_distributed
     )
     _, values = zip(*metric_dict["accuracy"])
+
+    # let's extract centralised loss (main metric reported in FedProx paper)
     rounds_loss, values_loss = zip(*hist.losses_centralized)
+
+    # _, axs = plt.subplots(nrows=2, ncols=1, sharex="row")
+    # axs[0].plot(np.asarray(rounds_loss), np.asarray(values_loss))
+    # axs[1].plot(np.asarray(rounds_loss), np.asarray(values))
+
+    # axs[0].set_ylabel("Loss")
+    # axs[1].set_ylabel("Accuracy")
+
+    # axs[1].set_ylim(0, 1)
+
     plt.plot(np.asarray(rounds_loss), np.asarray(values))
+
     plt.ylabel("Accuracy")
+
     plt.ylim(0, 1)
+    # plt.title(f"{metric_type.capitalize()} Validation - MNIST")
     plt.xlabel("Rounds")
+    # plt.legend(loc="lower right")
+
     plt.savefig(Path(save_plot_path) / Path(f"{metric_type}_metrics{suffix}.png"))
     plt.close()
 
@@ -409,17 +505,40 @@ def save_results_as_pickle(
     extra_results: Optional[Dict] = None,
     default_filename: str = "results.pkl",
 ) -> None:
-
+    """Save results from simulation to pickle.
+    Parameters
+    ----------
+    history: History
+        History returned by start_simulation.
+    file_path: Union[str, Path]
+        Path to file to create and store both history and extra_results.
+        If path is a directory, the default_filename will be used.
+        path doesn't exist, it will be created. If file exists, a
+        randomly generated suffix will be added to the file name. This
+        is done to avoid overwritting results.
+    extra_results : Optional[Dict]
+        A dictionary containing additional results you would like
+        to be saved to disk. Default: {} (an empty dictionary)
+    default_filename: Optional[str]
+        File used by default if file_path points to a directory instead
+        to a file. Default: "results.pkl"
+    """
     path = Path(file_path)
+
+    # ensure path exists
     path.mkdir(exist_ok=True, parents=True)
 
     def _add_random_suffix(path_: Path):
+        """Add a randomly generated suffix to the file name (so it doesn't.
+        overwrite the file).
+        """
         print(f"File `{path_}` exists! ")
         suffix = token_hex(4)
         print(f"New results to be saved with suffix: {suffix}")
         return path_.parent / (path_.stem + "_" + suffix + ".pkl")
 
     def _complete_path_with_default_name(path_: Path):
+        """Append the default file name to the path."""
         print("Using default filename")
         return path_ / default_filename
 
