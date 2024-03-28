@@ -487,6 +487,10 @@ class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
 
         # Aggregate and print custom metric
         aggregated_accuracy = sum(accuracies) / sum(examples)
+
+        aggregated_accuracy = sum([r.metrics["accuracy"] for _, r in results]) / len(
+            accuracies
+        )
         print(
             f"Round {server_round} accuracy aggregated from client results: {aggregated_accuracy}"
         )
