@@ -296,7 +296,7 @@ class FlowerClient(fl.client.NumPyClient):
             teacher,
             self.trainloader,
             optim,
-            epochs=epochs,
+            epochs=10 * epochs,
             tau=3,
             beta=1,
             num_classes=200,
