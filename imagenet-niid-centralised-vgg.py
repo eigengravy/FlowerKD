@@ -194,16 +194,20 @@ model = Net(num_classes=200).to(device)
 optim = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
 
-results = []
-for _ in tqdm(range(500)):
+loss, accuracy = test(model, testloader, device)
+results = [(loss, accuracy)]
+for _ in tqdm(range(500), desc=f"Loss: {loss}, Accuracy: {accuracy}"):
     train(model, trainloader, optim, device, 1, 200)
     loss, accuracy = test(model, testloader, device)
     results.append((loss, accuracy))
-    print(f"Loss: {loss}, Accuracy: {accuracy}")
 
 
+import os
+
+os.mkdir(f"outputs/imagnet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}")
 with open(
-    f"outputs/imagenet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}.csv", "w"
+    f"outputs/imagenet-niid-fedavg-{datetime.now().strftime('%d-%m-%H-%M')}/results.csv",
+    "w",
 ) as f:
     writer = csv.writer(f)
     writer.writerow(["loss", "accuracy"])
