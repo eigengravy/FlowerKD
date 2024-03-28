@@ -292,7 +292,7 @@ class FlowerClient(fl.client.NumPyClient):
             epochs=epochs,
             device=self.device,
         )
-        if self.fit_count > 10:
+        if self.fit_count >= 20:
             optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
             distill(
                 self.distillnet,
