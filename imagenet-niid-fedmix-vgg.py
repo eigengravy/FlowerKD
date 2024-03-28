@@ -402,7 +402,7 @@ def plot_metric_from_history(
     ) as f:
         writer = csv.writer(f)
         writer.writerow(["loss", "accuracy"])
-        _, v_loss, _, v_accuracy = zip(
+        (_, v_loss), (_, v_accuracy) = zip(
             *hist.losses_distributed, *hist.metrics_distributed["accuracy"]
         )
         writer.writerows(zip(v_loss, v_accuracy))
@@ -529,7 +529,7 @@ def main() -> None:
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
         config=fl.server.ServerConfig(num_rounds=1),
-        client_resources={"num_cpus": 2, "num_gpus": 0.5},
+        client_resources={"num_cpus": 4, "num_gpus": 2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
