@@ -297,7 +297,7 @@ class FlowerClient(fl.client.NumPyClient):
                 teacher,
                 self.trainloader,
                 optim,
-                epochs=5 * epochs,
+                epochs=epochs,
                 tau=3,
                 beta=1,
                 num_classes=200,
@@ -319,9 +319,9 @@ def get_client_fn(dataset: FederatedDataset):
         trainset = client_dataset_splits["train"]
         valset = client_dataset_splits["test"]
         trainloader = DataLoader(
-            trainset.with_transform(apply_transforms), batch_size=32, shuffle=True
+            trainset.with_transform(apply_transforms), batch_size=64, shuffle=True
         )
-        valloader = DataLoader(valset.with_transform(apply_transforms), batch_size=32)
+        valloader = DataLoader(valset.with_transform(apply_transforms), batch_size=64)
         return FlowerClient(trainloader, valloader).to_client()
 
     return client_fn
@@ -343,7 +343,7 @@ def get_evaluate_fn(
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         model.load_state_dict(state_dict)
         testset = centralized_testset.with_transform(apply_transforms)
-        testloader = DataLoader(testset, batch_size=32)
+        testloader = DataLoader(testset, batch_size=64)
         loss, accuracy = test(model, testloader, device)
         return loss, {"accuracy": accuracy}
 
