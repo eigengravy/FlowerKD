@@ -292,19 +292,19 @@ class FlowerClient(fl.client.NumPyClient):
             epochs=epochs,
             device=self.device,
         )
-        # if self.fit_count >= 20:
-        optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
-        distill(
-            self.distillnet,
-            teacher,
-            self.trainloader,
-            optim,
-            epochs=epochs,
-            tau=3,
-            beta=1,
-            num_classes=200,
-            device=self.device,
-        )
+        if self.fit_count >= 10:
+            optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
+            distill(
+                self.distillnet,
+                teacher,
+                self.trainloader,
+                optim,
+                epochs=5 * epochs,
+                tau=3,
+                beta=1,
+                num_classes=200,
+                device=self.device,
+            )
         loss, accuracy = test(self.distillnet, self.valloader, device=self.device)
         return self.get_parameters({}), len(self.valloader), {"accuracy": accuracy}
 
@@ -512,7 +512,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=100),
+        config=fl.server.ServerConfig(num_rounds=25),
         client_resources={"num_cpus": 4, "num_gpus": 2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
