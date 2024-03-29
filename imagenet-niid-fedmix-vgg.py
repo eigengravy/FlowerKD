@@ -280,6 +280,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.fit_count += 1
+        print("fit count", self.fit_count)
         self.set_parameters(self.fednet, parameters)  # ?? TODO: neeeded? confirm
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
