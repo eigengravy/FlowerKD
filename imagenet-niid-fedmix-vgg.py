@@ -476,6 +476,7 @@ def fit_metrics_aggregation_fn(metrics):
     examples, accuracy = zip(*metrics)
     num_clients = len(examples)
     accuracy = sum([m["accuracy"] for m in accuracy]) / num_clients
+    print("distill accuracy", accuracy)
     return {"accuracy": accuracy}
 
 
