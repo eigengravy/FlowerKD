@@ -281,7 +281,9 @@ class FlowerClient(fl.client.NumPyClient):
         self.set_parameters(self.fednet, parameters)  # ?? TODO: neeeded? confirm
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
-        self.set_parameters(self.distillnet, copy.deepcopy(self.state.state["distillnet"]))
+        self.set_parameters(
+            self.distillnet, copy.deepcopy(self.context.state["distillnet"])
+        )
         lr, epochs = config["lr"], config["epochs"]
         optim = torch.optim.SGD(self.fednet.parameters(), lr=lr, momentum=0.9)
         train(
@@ -304,7 +306,7 @@ class FlowerClient(fl.client.NumPyClient):
                 num_classes=200,
                 device=self.device,
             )
-            self.state.state["distillnet"] = [
+            self.context.state["distillnet"] = [
                 val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
             ]
         loss, accuracy = test(self.distillnet, self.valloader, device=self.device)
