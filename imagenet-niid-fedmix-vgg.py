@@ -261,7 +261,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def __init__(self, trainloader, valloader) -> None:
         super().__init__()
-
+        print(self.get_context())
         self.trainloader = trainloader
         self.valloader = valloader
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
