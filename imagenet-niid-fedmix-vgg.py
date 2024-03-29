@@ -470,10 +470,10 @@ def save_results_as_pickle(
 
 def fit_metrics_aggregation_fn(metrics):
     """Aggregate metrics from all clients."""
-    print(metrics)
+    # print(metrics)
     examples, accuracy = zip(*metrics)
     num_clients = len(examples)
-    accuracy = sum([m["accuracy"] for m in metrics]) / num_clients
+    accuracy = sum([m["accuracy"] for m in accuracy]) / num_clients
     return {"accuracy": accuracy}
 
 
