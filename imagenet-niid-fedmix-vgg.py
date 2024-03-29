@@ -464,8 +464,9 @@ def save_results_as_pickle(
     ) as f:
         writer = csv.writer(f)
         writer.writerow(["accuracy"])
-        (_, v_accuracy) = zip(*history.metrics_distributed_fit["accuracy"])
-        writer.writerows(v_accuracy)
+        print(history.metrics_distributed_fit["accuracy"])
+        # (_, v_accuracy) = zip(*history.metrics_distributed_fit["accuracy"])
+        # writer.writerows(v_accuracy)
 
 
 def fit_metrics_aggregation_fn(metrics):
