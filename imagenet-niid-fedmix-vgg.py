@@ -299,17 +299,17 @@ class FlowerClient(fl.client.NumPyClient):
                 teacher,
                 self.trainloader,
                 optim,
-                epochs=5 * epochs,
+                epochs=epochs,
                 tau=3,
                 beta=1,
                 num_classes=200,
                 device=self.device,
             )
-        return self.get_parameters({}), len(self.trainloader), {}
+        loss, accuracy = test(self.distillnet, self.trainloader, device=self.device)
+        return self.get_parameters({}), len(self.trainloader), {"accuracy": accuracy}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
-        loss, accuracy = test(self.distillnet, self.trainloader, device=self.device)
-        return float(loss), len(self.trainloader), {"accuracy": accuracy}
+        return None
 
 
 def get_client_fn(dataset: FederatedDataset):
@@ -463,43 +463,17 @@ def save_results_as_pickle(
         "w",
     ) as f:
         writer = csv.writer(f)
-        writer.writerow(["loss", "accuracy"])
-        (_, v_loss), (_, v_accuracy) = zip(*history.losses_distributed), zip(
-            *history.metrics_distributed["accuracy"]
-        )
-        writer.writerows(zip(v_loss, v_accuracy))
+        writer.writerow(["accuracy"])
+        (_, v_accuracy) = zip(*history.metrics_distributed_fit["accuracy"])
+        writer.writerows(v_accuracy)
 
 
-class AggregateCustomMetricStrategy(fl.server.strategy.FedAvg):
-    def aggregate_evaluate(
-        self, server_round: int, results, failures
-    ) -> Tuple[Optional[float], Dict[str, Scalar]]:
-        """Aggregate evaluation accuracy using weighted average."""
-
-        if not results:
-            return None, {}
-
-        # Call aggregate_evaluate from base class (FedAvg) to aggregate loss and metrics
-        aggregated_loss, aggregated_metrics = super().aggregate_evaluate(
-            server_round, results, failures
-        )
-
-        # Weigh accuracy of each client by number of examples used
-        accuracies = [r.metrics["accuracy"] * r.num_examples for _, r in results]
-        examples = [r.num_examples for _, r in results]
-
-        # Aggregate and print custom metric
-        aggregated_accuracy = sum(accuracies) / sum(examples)
-
-        aggregated_accuracy = sum([r.metrics["accuracy"] for _, r in results]) / len(
-            accuracies
-        )
-        print(
-            f"Round {server_round} accuracy aggregated from client results: {aggregated_accuracy}"
-        )
-
-        # Return aggregated loss and metrics (i.e., aggregated accuracy)
-        return aggregated_loss, {"accuracy": aggregated_accuracy}
+def fit_metrics_aggregation_fn(metrics):
+    """Aggregate metrics from all clients."""
+    examples, accuracy = zip(*metrics)
+    num_clients = len(examples)
+    accuracy = sum([m["accuracy"] for m in metrics]) / num_clients
+    return {"accuracy": accuracy}
 
 
 def main() -> None:
@@ -523,9 +497,10 @@ def main() -> None:
         }
         return config
 
-    strategy = AggregateCustomMetricStrategy(
+    strategy = fl.server.strategy.FedAvg(
         on_fit_config_fn=fit_config,
         evaluate_fn=get_evaluate_fn(centralized_testset),
+        fit_metrics_aggregation_fn=fit_metrics_aggregation_fn,
     )
 
     disable_progress_bar()
@@ -533,7 +508,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=100),
+        config=fl.server.ServerConfig(num_rounds=10),
         client_resources={"num_cpus": 4, "num_gpus": 2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
