@@ -305,11 +305,11 @@ class FlowerClient(fl.client.NumPyClient):
             num_classes=200,
             device=self.device,
         )
-        loss, accuracy = test(self.distillnet, self.trainloader, device=self.device)
-        return self.get_parameters({}), len(self.trainloader), {"accuracy": accuracy}
+        loss, accuracy = test(self.distillnet, self.valloader, device=self.device)
+        return self.get_parameters({}), len(self.valloader), {"accuracy": accuracy}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
-        self.set_parameters(self.fednetparameters)
+        self.set_parameters(self.fednet, parameters)
         loss, accuracy = test(self.fednet, self.valloader, device=self.device)
         return float(loss), len(self.valloader), {"accuracy": accuracy}
 
