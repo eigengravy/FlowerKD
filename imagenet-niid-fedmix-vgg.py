@@ -290,14 +290,14 @@ class FlowerClient(fl.client.NumPyClient):
             epochs=epochs,
             device=self.device,
         )
-        if config["round"] >= 10:
+        if config["round"] >= 10 and config["round"] % 2 == 0:
             optim = torch.optim.SGD(self.distillnet.parameters(), lr=lr, momentum=0.9)
             distill(
                 self.distillnet,
                 teacher,
                 self.trainloader,
                 optim,
-                epochs=epochs,
+                epochs=10 * epochs,
                 tau=3,
                 beta=1,
                 num_classes=200,
