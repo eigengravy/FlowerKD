@@ -309,8 +309,8 @@ class FlowerClient(fl.client.NumPyClient):
         return self.get_parameters({}), len(self.trainloader), {"accuracy": accuracy}
 
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]):
-        self.set_parameters(parameters)
-        loss, accuracy = test(self.model, self.valloader, device=self.device)
+        self.set_parameters(self.fednetparameters)
+        loss, accuracy = test(self.fednet, self.valloader, device=self.device)
         return float(loss), len(self.valloader), {"accuracy": accuracy}
 
 
@@ -511,7 +511,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=10),
+        config=fl.server.ServerConfig(num_rounds=100),
         client_resources={"num_cpus": 4, "num_gpus": 2},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
