@@ -274,9 +274,9 @@ class FlowerClient(fl.client.NumPyClient):
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
         print(self.context)
-        if self.get_context().state.parameters_record["distillnet"] is None:
+        if self.get_context().state._parameters_record["distillnet"] is None:
             print("no model, initializing one")
-            self.context.parameters_record["distillnet"] = (
+            self.context._parameters_record["distillnet"] = (
                 parameters_to_parametersrecord(self.distillnet.parameters)
             )
 
@@ -296,7 +296,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.set_parameters(
             self.distillnet,
             parametersrecord_to_parameters(
-                self.context.parameters_record["distillnet"]
+                self.context._parameters_record["distillnet"]
             ),
         )
         lr, epochs = config["lr"], config["epochs"]
