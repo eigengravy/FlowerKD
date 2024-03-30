@@ -262,13 +262,13 @@ class FlowerClient(fl.client.NumPyClient):
 
     def __init__(self, trainloader, valloader) -> None:
         super().__init__()
-        print(self.get_context())
         self.trainloader = trainloader
         self.valloader = valloader
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.fednet = Net(num_classes=200).to(self.device)
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
+        print(self.get_context())
         print(self.context.state)
         if self.context.state["distillnet"] is None:
             self.context.state["distillnet"] = [
