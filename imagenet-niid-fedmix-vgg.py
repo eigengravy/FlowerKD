@@ -32,7 +32,13 @@ from datetime import datetime
 
 
 from flwr_datasets.partitioner import DirichletPartitioner
-from flwr.common import Context, RecordSet
+from flwr.common import (
+    Context,
+    RecordSet,
+    ParametersRecord,
+    parametersrecord_to_parameters,
+    parameters_to_parametersrecord,
+)
 
 
 def apply_transforms(batch):
@@ -268,12 +274,12 @@ class FlowerClient(fl.client.NumPyClient):
         self.fednet = Net(num_classes=200).to(self.device)
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
-        print(self.get_context())
-        print(self.context.state)
-        if self.context.state["distillnet"] is None:
-            self.context.state["distillnet"] = [
-                val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
-            ]
+
+        if self.get_context().state.parameters_record["distillnet"] is None:
+            print("no model, initializing one")
+            self.context.parameters_record["distillnet"] = (
+                parameters_to_parametersrecord(self.distillnet.parameters)
+            )
 
     def set_parameters(self, net, parameters):
         """Change the parameters of the model using the given ones."""
@@ -289,7 +295,10 @@ class FlowerClient(fl.client.NumPyClient):
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
         self.set_parameters(
-            self.distillnet, copy.deepcopy(self.context.state["distillnet"])
+            self.distillnet,
+            parametersrecord_to_parameters(
+                self.context.parameters_record["distillnet"]
+            ),
         )
         lr, epochs = config["lr"], config["epochs"]
         optim = torch.optim.SGD(self.fednet.parameters(), lr=lr, momentum=0.9)
@@ -313,9 +322,9 @@ class FlowerClient(fl.client.NumPyClient):
                 num_classes=200,
                 device=self.device,
             )
-            self.context.state["distillnet"] = [
-                val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
-            ]
+            self.context.parameters_record["distillnet"] = (
+                parameters_to_parametersrecord(self.distillnet.parameters)
+            )
         loss, accuracy = test(self.distillnet, self.valloader, device=self.device)
         return self.get_parameters({}), len(self.valloader), {"accuracy": accuracy}
 
