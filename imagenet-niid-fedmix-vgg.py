@@ -274,11 +274,11 @@ class FlowerClient(fl.client.NumPyClient):
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
         print(self.context)
-        if self.get_context().state._parameters_records["distillnet"] is None:
+        if self.get_context().state._configs_records["distillnet"] is None:
             print("no model, initializing one")
-            self.context._parameters_records["distillnet"] = (
-                parameters_to_parametersrecord(self.distillnet.parameters)
-            )
+            self.context._configs_records["distillnet"] = [
+                val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
+            ]
 
     def set_parameters(self, net, parameters):
         """Change the parameters of the model using the given ones."""
@@ -294,10 +294,7 @@ class FlowerClient(fl.client.NumPyClient):
         teacher = Net(num_classes=200).to(self.device)
         self.set_parameters(teacher, parameters)
         self.set_parameters(
-            self.distillnet,
-            parametersrecord_to_parameters(
-                self.context._parameters_records["distillnet"]
-            ),
+            self.distillnet, self.context._configs_records["distillnet"]
         )
         lr, epochs = config["lr"], config["epochs"]
         optim = torch.optim.SGD(self.fednet.parameters(), lr=lr, momentum=0.9)
@@ -321,9 +318,9 @@ class FlowerClient(fl.client.NumPyClient):
                 num_classes=200,
                 device=self.device,
             )
-            self.context.parameters_record["distillnet"] = (
-                parameters_to_parametersrecord(self.distillnet.parameters)
-            )
+            self.context._configs_records["distillnet"] = [
+                val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
+            ]
         loss, accuracy = test(self.distillnet, self.valloader, device=self.device)
         return self.get_parameters({}), len(self.valloader), {"accuracy": accuracy}
 
