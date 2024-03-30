@@ -273,7 +273,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.fednet = Net(num_classes=200).to(self.device)
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
-
+        print(self.context)
         if self.get_context().state.parameters_record["distillnet"] is None:
             print("no model, initializing one")
             self.context.parameters_record["distillnet"] = (
