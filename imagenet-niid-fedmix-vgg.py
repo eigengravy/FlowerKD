@@ -32,6 +32,7 @@ from datetime import datetime
 
 
 from flwr_datasets.partitioner import DirichletPartitioner
+from flwr.common import Context, RecordSet
 
 
 def apply_transforms(batch):
@@ -267,6 +268,8 @@ class FlowerClient(fl.client.NumPyClient):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.fednet = Net(num_classes=200).to(self.device)
         self.distillnet = Net(num_classes=200).to(self.device)
+        self.context = Context(state=RecordSet())
+        print(self.context.state)
         if self.context.state["distillnet"] is None:
             self.context.state["distillnet"] = [
                 val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
