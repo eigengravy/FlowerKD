@@ -32,10 +32,9 @@ from datetime import datetime
 
 
 from flwr_datasets.partitioner import DirichletPartitioner
-from flwr.common import (
-    Context,
-    RecordSet,
-    ParametersRecord,
+from flwr.common import Context, RecordSet, ParametersRecord
+
+from flwr.common.recordset_compat import (
     parametersrecord_to_parameters,
     parameters_to_parametersrecord,
 )
