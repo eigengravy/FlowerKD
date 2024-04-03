@@ -265,8 +265,6 @@ clients = [
     for trainloader, testloader in zip(trainloaders, testloaders)
 ]
 
-global_fednet = Net().to(DEVICE)
-
 
 def average_weights(w):
     w_avg = copy.deepcopy(w[0])
@@ -290,9 +288,10 @@ for _ in range(num_iterations):
     for client in clients:
         client.train(2)
 
+    global_fednet = Net().to(DEVICE)
     client_weights = [client.fednet.state_dict() for client in clients]
     global_weights = average_weights(client_weights)
-    global_fednet.load_state_dict(client_weights)
+    global_fednet.load_state_dict(global_weights)
 
     fednet_accuracy = evaluate(
         global_fednet, load_dataloader(centralised_testset, False)
