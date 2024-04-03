@@ -218,9 +218,9 @@ class Client:
         self.testloader = testloader
 
     def train(self, epochs):
-        for _ in tqdm(range(epochs)):
+        for _ in tqdm(range(epochs), desc="Train"):
             self.fednet.train()
-            for batch in tqdm(self.trainloader):
+            for batch in tqdm(self.trainloader, leave=False):
                 inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.fedoptimizer.zero_grad()
                 outputs = self.fednet(inputs)
@@ -229,9 +229,9 @@ class Client:
                 self.fedoptimizer.step()
 
     def distill(self, epochs):
-        for _ in tqdm(range(epochs)):
+        for _ in tqdm(range(epochs), desc="Distill"):
             self.distillnet.train()
-            for batch in tqdm(self.trainloader):
+            for batch in tqdm(self.trainloader, leave=False):
                 inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.distilloptimizer.zero_grad()
                 outputs = self.distillnet(inputs)
@@ -283,17 +283,17 @@ with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
 
 for _ in range(num_iterations):
     for client in clients:
-        client.train(1)
+        client.train(5)
 
     global_fednet.load_state_dict(
         fedavg_models([client.fednet.state_dict() for client in clients])
     )
 
     for client in clients:
-        client.fednet.load_state_dict(global_fednet.state_dict())
+        client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
     for client in clients:
-        client.distill(1)
+        client.distill(5)
 
     fednet_accuracy = evaluate(
         global_fednet, load_dataloader(centralised_testset, False)
