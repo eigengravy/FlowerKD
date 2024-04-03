@@ -283,7 +283,7 @@ with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
 
 for _ in range(num_iterations):
     for client in clients:
-        client.train(5)
+        client.train(3)
 
     global_fednet.load_state_dict(
         fedavg_models([client.fednet.state_dict() for client in clients])
@@ -299,7 +299,7 @@ for _ in range(num_iterations):
     print(f"Central Accuracy: {fednet_accuracy}")
 
     for client in clients:
-        client.distill(5)
+        client.distill(2)
 
     distillnet_accuracy = sum(
         [evaluate(client.distillnet, client.testloader) for client in clients]
