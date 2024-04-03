@@ -277,7 +277,7 @@ distributed_distillnet_accuracies = []
 
 save_path = "outputs/imagenet-niid-fedmix-vgg-" + datetime.now().strftime("%d-%m-%H-%M")
 
-with open(f"{save_path}/fedmix-local-results.csv", "w") as f:
+with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
     writer = csv.writer(f)
     writer.writerow(["Central Accuracy", "Distributed Accuracy"])
 
@@ -305,6 +305,6 @@ for _ in range(num_iterations):
         f"Central Accuracy: {fednet_accuracy} | Distributed Accuracy: {distillnet_accuracy}"
     )
 
-    with open(f"{save_path}/fedmix-local-results.csv", "a") as f:
+    with open(f"{save_path}-fedmix-local-results.csv", "a") as f:
         writer = csv.writer(f)
         writer.writerow([fednet_accuracy, distillnet_accuracy])
