@@ -292,7 +292,8 @@ for _ in range(num_iterations):
     for client in clients:
         client.fednet.load_state_dict(global_fednet.state_dict())
 
-    client.distill(1)
+    for client in clients:
+        client.distill(1)
 
     fednet_accuracy = evaluate(
         global_fednet, load_dataloader(centralised_testset, False)
