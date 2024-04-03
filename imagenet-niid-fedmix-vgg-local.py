@@ -8,6 +8,7 @@ from torch.utils.data import DataLoader
 from flwr_datasets.partitioner import DirichletPartitioner
 from torchvision import transforms
 from tqdm import tqdm
+import csv
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -273,6 +274,10 @@ def fedavg_models(weights):
 centralised_fednet_accuracies = []
 distributed_distillnet_accuracies = []
 
+with open("fedmix-local-results.csv", "w") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Central Accuracy", "Distributed Accuracy"])
+
 for _ in range(num_iterations):
     for client in clients:
         client.train(1)
@@ -296,3 +301,7 @@ for _ in range(num_iterations):
     print(
         f"Central Accuracy: {fednet_accuracy} | Distributed Accuracy: {distillnet_accuracy}"
     )
+
+    with open("fedmix-local-results.csv", "a") as f:
+        writer = csv.writer(f)
+        writer.writerow([fednet_accuracy, distillnet_accuracy])
