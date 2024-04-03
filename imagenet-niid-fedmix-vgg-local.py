@@ -230,7 +230,7 @@ class Client:
                 loss.backward()
                 self.fedoptimizer.step()
 
-        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
+        # print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
     def distill(self, epochs):
         for _ in tqdm(range(epochs), desc="Distill"):
@@ -267,13 +267,13 @@ clients = [
 global_fednet = Net().to(DEVICE)
 
 
-def fedavg_models(weights):
-    avg = copy.deepcopy(weights[0])
-    for i in range(1, len(weights)):
-        for key in avg:
-            avg[key] += weights[i][key]
-        avg[key] = torch.div(avg[key], len(weights))
-    return avg
+def average_weights(w):
+    w_avg = copy.deepcopy(w[0])
+    for key in w_avg.keys():
+        for i in range(1, len(w)):
+            w_avg[key] += w[i][key]
+        w_avg[key] = torch.div(w_avg[key], len(w))
+    return w_avg
 
 
 centralised_fednet_accuracies = []
@@ -287,10 +287,13 @@ with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
 
 for _ in range(num_iterations):
     for client in clients:
-        client.train(3)
+        client.train(2)
 
     global_fednet.load_state_dict(
-        fedavg_models([client.fednet.state_dict() for client in clients])
+        average_weights(
+            [copy.deepcopy(client.fednet.state_dict()) for client in clients]
+        ),
+        strict=True,
     )
 
     for client in clients:
@@ -303,7 +306,7 @@ for _ in range(num_iterations):
     print(f"Central Accuracy: {fednet_accuracy}")
 
     for client in clients:
-        client.distill(2)
+        client.distill(1)
 
     distillnet_accuracy = sum(
         [evaluate(client.distillnet, client.testloader) for client in clients]
