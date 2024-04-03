@@ -157,8 +157,8 @@ class Net(nn.Module):
         return x
 
 
-num_clients = 10
-num_iterations = 100
+num_clients = 1
+num_iterations = 1
 
 dataset = FederatedDataset(
     dataset="zh-plus/tiny-imagenet",
@@ -218,8 +218,8 @@ class Client:
     def train(self, epochs):
         for _ in tqdm(range(epochs)):
             self.fednet.train()
-            for inputs, labels in tqdm(self.trainloader):
-                inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+            for batch in tqdm(self.trainloader):
+                inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.fedoptimizer.zero_grad()
                 outputs = self.fednet(inputs)
                 loss = self.fedcriterion(outputs, labels)
@@ -229,8 +229,8 @@ class Client:
     def distill(self, epochs):
         for _ in tqdm(range(epochs)):
             self.distillnet.train()
-            for inputs, labels in tqdm(self.trainloader):
-                inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+            for batch in tqdm(self.trainloader):
+                inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.distilloptimizer.zero_grad()
                 outputs = self.distillnet(inputs)
                 loss = self.distillcriterion(outputs, labels, self.fednet(inputs))
@@ -243,8 +243,8 @@ def evaluate(model, testloader):
     correct = 0
     total = 0
     with torch.no_grad():
-        for inputs, labels in testloader:
-            inputs, labels = inputs.to(DEVICE), labels.to(DEVICE)
+        for batch in testloader:
+            inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
             outputs = model(inputs)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
