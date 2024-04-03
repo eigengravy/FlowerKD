@@ -286,7 +286,9 @@ for _ in range(num_iterations):
 
     client.distill(1)
 
-    fednet_accuracy = evaluate(global_fednet, centralised_testset)
+    fednet_accuracy = evaluate(
+        global_fednet, load_dataloader(centralised_testset, False)
+    )
     distillnet_accuracy = sum(
         [evaluate(client.distill, client.valloader) for client in clients]
     ) / len(clients)
