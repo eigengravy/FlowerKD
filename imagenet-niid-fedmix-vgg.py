@@ -274,11 +274,13 @@ class FlowerClient(fl.client.NumPyClient):
         self.distillnet = Net(num_classes=200).to(self.device)
         self.context = Context(state=RecordSet())
         print(self.context)
-        if self.get_context().state._configs_records["distillnet"] is None:
+        self.context.state
+        if self.get_context().state.configs_records["distillnet"] is None:
             print("no model, initializing one")
-            self.context._configs_records["distillnet"] = [
+            self.context.state.configs_records["distillnet"] = [
                 val.cpu().numpy() for _, val in self.distillnet.state_dict().items()
             ]
+            print("done")
 
     def set_parameters(self, net, parameters):
         """Change the parameters of the model using the given ones."""
