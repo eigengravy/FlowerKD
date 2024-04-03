@@ -157,8 +157,8 @@ class Net(nn.Module):
         return x
 
 
-num_clients = 1
-num_iterations = 1
+num_clients = 10
+num_iterations = 50
 
 dataset = FederatedDataset(
     dataset="zh-plus/tiny-imagenet",
