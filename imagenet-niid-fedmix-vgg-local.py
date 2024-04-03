@@ -292,19 +292,20 @@ for _ in range(num_iterations):
     for client in clients:
         client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
-    for client in clients:
-        client.distill(5)
-
     fednet_accuracy = evaluate(
         global_fednet, load_dataloader(centralised_testset, False)
     )
+
+    print(f"Central Accuracy: {fednet_accuracy}")
+
+    for client in clients:
+        client.distill(5)
+
     distillnet_accuracy = sum(
         [evaluate(client.distillnet, client.testloader) for client in clients]
     ) / len(clients)
 
-    print(
-        f"Central Accuracy: {fednet_accuracy} | Distributed Accuracy: {distillnet_accuracy}"
-    )
+    print(f"Distributed Accuracy: {distillnet_accuracy}")
 
     with open(f"{save_path}-fedmix-local-results.csv", "a") as f:
         writer = csv.writer(f)
