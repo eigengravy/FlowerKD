@@ -210,8 +210,10 @@ class Client:
     def __init__(self, trainloader, testloader, num_classes=200, tau=3, beta=1) -> None:
         self.fednet = Net().to(DEVICE)
         self.distillnet = Net().to(DEVICE)
-        self.fedoptimizer = optim.Adam(self.fednet.parameters(), lr=0.001)
-        self.distilloptimizer = optim.Adam(self.distillnet.parameters(), lr=0.001)
+        self.fedoptimizer = optim.SGD(self.fednet.parameters(), lr=0.01, momentum=0.9)
+        self.distilloptimizer = optim.SGD(
+            self.distillnet.parameters(), lr=0.01, momentum=0.9
+        )
         self.fedcriterion = nn.CrossEntropyLoss()
         self.distillcriterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
         self.trainloader = trainloader
@@ -227,6 +229,8 @@ class Client:
                 loss = self.fedcriterion(outputs, labels)
                 loss.backward()
                 self.fedoptimizer.step()
+
+        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
     def distill(self, epochs):
         for _ in tqdm(range(epochs), desc="Distill"):
