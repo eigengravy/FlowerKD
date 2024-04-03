@@ -230,7 +230,7 @@ class Client:
                 loss.backward()
                 self.fedoptimizer.step()
 
-        # print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
+        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
     def distill(self, epochs):
         for _ in tqdm(range(epochs), desc="Distill"):
@@ -242,6 +242,7 @@ class Client:
                 loss = self.distillcriterion(outputs, labels, self.fednet(inputs))
                 loss.backward()
                 self.distilloptimizer.step()
+        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
 
 def evaluate(model, testloader):
@@ -289,21 +290,18 @@ for _ in range(num_iterations):
     for client in clients:
         client.train(2)
 
-    global_fednet.load_state_dict(
-        average_weights(
-            [copy.deepcopy(client.fednet.state_dict()) for client in clients]
-        ),
-        strict=True,
-    )
-
-    for client in clients:
-        client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
+    client_weights = [client.fednet.state_dict() for client in clients]
+    global_weights = average_weights(client_weights)
+    global_fednet.load_state_dict(client_weights)
 
     fednet_accuracy = evaluate(
         global_fednet, load_dataloader(centralised_testset, False)
     )
 
     print(f"Central Accuracy: {fednet_accuracy}")
+
+    for client in clients:
+        client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
     for client in clients:
         client.distill(1)
