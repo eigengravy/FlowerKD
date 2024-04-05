@@ -160,7 +160,7 @@ class Net(nn.Module):
 
 
 num_clients = 10
-num_iterations = 50
+num_iterations = 100
 
 dataset = FederatedDataset(
     dataset="zh-plus/tiny-imagenet",
@@ -198,6 +198,8 @@ def load_dataloader(split, train=True):
     )
 
 
+centralised_dataloader = load_dataloader(centralised_testset, False)
+
 trainloaders, testloaders = zip(
     *[
         (load_dataloader(train_split, True), load_dataloader(test_split, False))
@@ -230,7 +232,7 @@ class Client:
                 loss.backward()
                 self.fedoptimizer.step()
 
-        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
+        # print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
     def distill(self, epochs):
         for _ in tqdm(range(epochs), desc="Distill"):
@@ -242,7 +244,8 @@ class Client:
                 loss = self.distillcriterion(outputs, labels, self.fednet(inputs))
                 loss.backward()
                 self.distilloptimizer.step()
-        print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
+
+        # print(f"DEBUG: {evaluate(self.fednet, self.testloader)}")
 
 
 def evaluate(model, testloader):
@@ -290,35 +293,57 @@ save_path = "outputs/imagenet-niid-fedmix-vgg-" + datetime.now().strftime("%d-%m
 
 with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
     writer = csv.writer(f)
-    writer.writerow(["Central Accuracy", "Distributed Accuracy"])
+    writer.writerow(
+        [
+            "Fednet Central Accuracy",
+            "Fednet Distributed Accuracy",
+            "Distillnet Central Accuracy",
+            "Distillnet Distributed Accuracy",
+        ]
+    )
 
 for _ in range(num_iterations):
     for client in clients:
-        client.train(2)
+        client.train(3)
 
     global_fednet = Net().to(DEVICE)
     client_weights = [client.fednet.state_dict() for client in clients]
     global_weights = average_weights(client_weights)
     global_fednet.load_state_dict(global_weights)
 
-    fednet_accuracy = evaluate(
-        global_fednet, load_dataloader(centralised_testset, False)
-    )
+    fednet_central_accuracy = evaluate(global_fednet, centralised_dataloader)
 
-    print(f"Central Accuracy: {fednet_accuracy}")
+    fednet_distributed_accuracy = sum(
+        [evaluate(client.fednet, client.testloader) for client in clients]
+    ) / len(clients)
+
+    print(f"Fednet Central Accuracy: {fednet_central_accuracy}")
+    print(f"Fednet Distributed Accuracy: {fednet_distributed_accuracy}")
 
     for client in clients:
         client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
     for client in clients:
-        client.distill(1)
+        client.distill(2)
 
-    distillnet_accuracy = sum(
+    distillnet_distributed_accuracy = sum(
         [evaluate(client.distillnet, client.testloader) for client in clients]
     ) / len(clients)
 
-    print(f"Distributed Accuracy: {distillnet_accuracy}")
+    distillnet_central_accuracy = sum(
+        [evaluate(client.distillnet, centralised_dataloader) for client in clients]
+    ) / len(clients)
+
+    print(f"Distillnet Central Accuracy: {distillnet_central_accuracy}")
+    print(f"Distillnet Distributed Accuracy: {distillnet_distributed_accuracy}")
 
     with open(f"{save_path}-fedmix-local-results.csv", "a") as f:
         writer = csv.writer(f)
-        writer.writerow([fednet_accuracy, distillnet_accuracy])
+        writer.writerow(
+            [
+                fednet_central_accuracy,
+                fednet_distributed_accuracy,
+                distillnet_central_accuracy,
+                distillnet_distributed_accuracy,
+            ]
+        )
