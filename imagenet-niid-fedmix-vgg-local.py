@@ -266,12 +266,20 @@ clients = [
 ]
 
 
+# def average_weights(w):
+#     w_avg = copy.deepcopy(w[0])
+#     for key in w_avg.keys():
+#         for i in range(1, len(w)):
+#             w_avg[key] += w[i][key]
+#         w_avg[key] = torch.div(w_avg[key], len(w))
+#     return w_avg
+
+
 def average_weights(w):
     w_avg = copy.deepcopy(w[0])
     for key in w_avg.keys():
-        for i in range(1, len(w)):
-            w_avg[key] += w[i][key]
-        w_avg[key] = torch.div(w_avg[key], len(w))
+        weights = [w_[key] for w_ in w]
+        w_avg[key] = torch.mean(torch.stack(weights, dim=0), dim=0)
     return w_avg
 
 
