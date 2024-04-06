@@ -302,9 +302,9 @@ with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
         ]
     )
 
-for _ in range(num_iterations):
+for i in range(num_iterations):
     for client in clients:
-        client.train(3)
+        client.train(2)
 
     global_fednet = Net().to(DEVICE)
     client_weights = [client.fednet.state_dict() for client in clients]
@@ -323,16 +323,20 @@ for _ in range(num_iterations):
     for client in clients:
         client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
-    for client in clients:
-        client.distill(2)
+    if i > 20:
+        for client in clients:
+            client.distill(2)
 
-    distillnet_distributed_accuracy = sum(
-        [evaluate(client.distillnet, client.testloader) for client in clients]
-    ) / len(clients)
+        distillnet_distributed_accuracy = sum(
+            [evaluate(client.distillnet, client.testloader) for client in clients]
+        ) / len(clients)
 
-    distillnet_central_accuracy = sum(
-        [evaluate(client.distillnet, centralised_dataloader) for client in clients]
-    ) / len(clients)
+        distillnet_central_accuracy = sum(
+            [evaluate(client.distillnet, centralised_dataloader) for client in clients]
+        ) / len(clients)
+    else:
+        distillnet_distributed_accuracy = 0
+        distillnet_central_accuracy = 0
 
     print(f"Distillnet Central Accuracy: {distillnet_central_accuracy}")
     print(f"Distillnet Distributed Accuracy: {distillnet_distributed_accuracy}")
