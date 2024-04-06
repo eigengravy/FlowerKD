@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 import csv
-from datasets import load_dataset
+from flwr_datasets import FederatedDataset
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -120,7 +120,7 @@ class Net(nn.Module):
 
 num_iterations = 100
 
-dataset = load_dataset("zh-plus/tiny-imagenet")
+dataset = FederatedDataset("zh-plus/tiny-imagenet")
 trainset = dataset.load_split("train")
 testset = dataset.load_split("valid")
 
