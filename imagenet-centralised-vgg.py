@@ -120,7 +120,7 @@ class Net(nn.Module):
 
 num_iterations = 100
 
-dataset = FederatedDataset("zh-plus/tiny-imagenet")
+dataset = FederatedDataset(dataset="zh-plus/tiny-imagenet")
 trainset = dataset.load_split("train")
 testset = dataset.load_split("valid")
 
