@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Optimizer
-from torchvision import transforms
+from torchvision.transforms import Compose, Normalize, ToTensor
 
 from typing import Callable, Dict, Optional, Tuple, Union
 
@@ -328,117 +328,45 @@ class DirichletPartitioner(Partitioner):
 
 def apply_transforms(batch):
     """Get transformation for MNIST dataset."""
-    tfs = transforms.Compose(
-        [
-            transforms.RandomRotation(30),
-            transforms.RandomResizedCrop(227),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
-    batch["image"] = [tfs(img) for img in batch["image"]]
+    transforms = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
+    batch["image"] = [transforms(img) for img in batch["image"]]
     return batch
 
 
 class Net(nn.Module):
-    def __init__(self, num_classes=101):
-        super(Net, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-        )
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-        )
-        self.layer4 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.layer5 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-        )
-        self.layer6 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-        )
-        self.layer7 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.layer8 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-        )
-        self.layer9 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-        )
-        self.layer10 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.layer11 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-        )
-        self.layer12 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-        )
-        self.layer13 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.fc = nn.Sequential(
-            nn.Dropout(0.5), nn.Linear(7 * 7 * 512, 4096), nn.ReLU()
-        )
-        self.fc1 = nn.Sequential(nn.Dropout(0.5), nn.Linear(4096, 4096), nn.ReLU())
-        self.fc2 = nn.Sequential(nn.Linear(4096, num_classes))
+    """Convolutional Neural Network architecture.
+    As described in McMahan 2017 paper :
+    [Communication-Efficient Learning of Deep Networks from
+    Decentralized Data] (https://arxiv.org/pdf/1602.05629.pdf)
+    """
 
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = self.layer5(out)
-        out = self.layer6(out)
-        out = self.layer7(out)
-        out = self.layer8(out)
-        out = self.layer9(out)
-        out = self.layer10(out)
-        out = self.layer11(out)
-        out = self.layer12(out)
-        out = self.layer13(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.fc(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        return out
+    def __init__(self, num_classes: int) -> None:
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, 5, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 5, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=(2, 2), padding=1)
+        self.fc1 = nn.Linear(64 * 7 * 7, 512)
+        self.fc2 = nn.Linear(512, num_classes)
+
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        """Forward pass of the CNN.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input Tensor that will pass through the network
+        Returns
+        -------
+        torch.Tensor
+            The resulting Tensor after it has passed through the network
+        """
+        output_tensor = F.relu(self.conv1(input_tensor))
+        output_tensor = self.pool(output_tensor)
+        output_tensor = F.relu(self.conv2(output_tensor))
+        output_tensor = self.pool(output_tensor)
+        output_tensor = torch.flatten(output_tensor, 1)
+        output_tensor = F.relu(self.fc1(output_tensor))
+        output_tensor = self.fc2(output_tensor)
+        return output_tensor
 
 
 def train(  # pylint: disable=too-many-arguments
@@ -469,7 +397,7 @@ def train(  # pylint: disable=too-many-arguments
     beta : float
         Parameter for beta.
     """
-    criterion = NTDLoss(num_classes=num_classes, tau=tau, beta=beta)
+    criterion = nn.CrossEntropyLoss()
     global_net = Net(num_classes).to(device=device)
     global_net.load_state_dict(net.state_dict())
     net.train()
@@ -477,10 +405,7 @@ def train(  # pylint: disable=too-many-arguments
         for batch in trainloader:
             images, labels = batch["image"].to(device), batch["label"].to(device)
             optimizer.zero_grad()
-            local_logits = net(images)
-            with torch.no_grad():
-                global_logits = global_net(images)
-            loss = criterion(local_logits, labels, global_logits)
+            loss = criterion(net(images), labels)
             loss.backward()
             optimizer.step()
 
@@ -507,7 +432,7 @@ def test(
     net.eval()
     with torch.no_grad():
         for data in testloader:
-            images, labels = data["img"].to(device), data["label"].to(device)
+            images, labels = data["image"].to(device), data["label"].to(device)
             outputs = net(images)
             loss += criterion(outputs, labels).item()
             _, predicted = torch.max(outputs.data, 1)
@@ -698,18 +623,17 @@ def plot_metric_from_history(
     # axs[0].set_ylabel("Loss")
     # axs[1].set_ylabel("Accuracy")
 
-    # # plt.title(f"{metric_type.capitalize()} Validation - MNIST")
-    # plt.xlabel("Rounds")
-    # plt.legend(loc="lower right")
+    # axs[1].set_ylim(0, 1)
 
     plt.plot(np.asarray(rounds_loss), np.asarray(values))
 
     plt.ylabel("Accuracy")
 
-    # plt.ylim(0, 1)
+    plt.ylim(0, 1)
     # plt.title(f"{metric_type.capitalize()} Validation - MNIST")
     plt.xlabel("Rounds")
     # plt.legend(loc="lower right")
+
     plt.savefig(Path(save_plot_path) / Path(f"{metric_type}_metrics{suffix}.png"))
     plt.close()
 
@@ -720,24 +644,6 @@ def save_results_as_pickle(
     extra_results: Optional[Dict] = None,
     default_filename: str = "results.pkl",
 ) -> None:
-    """Save results from simulation to pickle.
-    Parameters
-    ----------
-    history: History
-        History returned by start_simulation.
-    file_path: Union[str, Path]
-        Path to file to create and store both history and extra_results.
-        If path is a directory, the default_filename will be used.
-        path doesn't exist, it will be created. If file exists, a
-        randomly generated suffix will be added to the file name. This
-        is done to avoid overwritting results.
-    extra_results : Optional[Dict]
-        A dictionary containing additional results you would like
-        to be saved to disk. Default: {} (an empty dictionary)
-    default_filename: Optional[str]
-        File used by default if file_path points to a directory instead
-        to a file. Default: "results.pkl"
-    """
     path = Path(file_path)
 
     # ensure path exists
@@ -776,17 +682,13 @@ def save_results_as_pickle(
 
 
 def main() -> None:
-    NUM_CLIENTS = 3
+    NUM_CLIENTS = 10
 
     mnist_fds = FederatedDataset(
-        dataset="food101",
-        partitioners={
-            "train": DirichletPartitioner(
-                num_partitions=3, alpha=0.5, partition_by="label"
-            ),
-        },
+        dataset="mnist",
+        partitioners={"train": 500},
     )
-    centralized_testset = mnist_fds.load_full("validation")
+    centralized_testset = mnist_fds.load_full("test")
 
     def fit_config(server_round: int) -> Dict[str, Scalar]:
         """Return a configuration with static batch size and (local) epochs."""
@@ -806,7 +708,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=1),
+        config=fl.server.ServerConfig(num_rounds=50),
         client_resources={"num_cpus": 1, "num_gpus": 0},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
@@ -816,7 +718,7 @@ def main() -> None:
     print(history)
 
     save_path = (
-        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-food101-niid-fedntd"
+        "outputs/" + datetime.now().strftime("%d-%m-%H-%M") + "-fedavg-mnist-iid"
     )
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})

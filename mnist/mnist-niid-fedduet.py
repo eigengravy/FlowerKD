@@ -54,7 +54,7 @@ class NTDLoss(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, num_classes: int) -> None:
+    def __init__(self, num_classes=10) -> None:
         super().__init__()
         self.conv1 = nn.Conv2d(1, 32, 5, padding=1)
         self.conv2 = nn.Conv2d(32, 64, 5, padding=1)
@@ -73,7 +73,7 @@ class Net(nn.Module):
         return output_tensor
 
 
-num_clients = 10
+num_clients = 20
 num_iterations = 100
 
 dataset = FederatedDataset(
@@ -99,7 +99,7 @@ def apply_transforms(batch):
     tfs = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
+            # transforms.Lambda(lambda x: x.repeat(3, 1, 1) if x.size(0) == 1 else x),
         ]
     )
     batch["image"] = [tfs(img) for img in batch["image"]]
@@ -123,7 +123,7 @@ trainloaders, testloaders = zip(
 
 
 class Client:
-    def __init__(self, trainloader, testloader, num_classes=200, tau=3, beta=1) -> None:
+    def __init__(self, trainloader, testloader, num_classes=10, tau=3, beta=1) -> None:
         self.fednet = Net().to(DEVICE)
         self.distillnet = Net().to(DEVICE)
         self.fedoptimizer = optim.SGD(self.fednet.parameters(), lr=0.01, momentum=0.9)
@@ -218,7 +218,7 @@ with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
 
 for _ in range(num_iterations):
     for client in clients:
-        client.train(3)
+        client.train(1)
 
     global_fednet = Net().to(DEVICE)
     client_weights = [client.fednet.state_dict() for client in clients]
@@ -238,7 +238,7 @@ for _ in range(num_iterations):
         client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
     for client in clients:
-        client.distill(2)
+        client.distill(1)
 
     distillnet_distributed_accuracy = sum(
         [evaluate(client.distillnet, client.testloader) for client in clients]
