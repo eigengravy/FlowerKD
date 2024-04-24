@@ -37,8 +37,6 @@ class DKDLoss(nn.Module):
 
     def __init__(
         self,
-        name,
-        use_this,
         temp=4.0,
         alpha=1.0,
         beta=6.0,

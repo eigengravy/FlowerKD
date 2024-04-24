@@ -19,8 +19,6 @@ class NKDLoss(nn.Module):
 
     def __init__(
         self,
-        name,
-        use_this,
         temp=1.0,
         gamma=1.5,
     ):
