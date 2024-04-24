@@ -11,7 +11,7 @@ from torchvision import transforms
 from tqdm import tqdm
 import csv
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 
 class NTDLoss(nn.Module):
@@ -203,7 +203,9 @@ def average_weights(w):
 centralised_fednet_accuracies = []
 distributed_distillnet_accuracies = []
 
-save_path = "outputs/imagenet-niid-fedmix-vgg-" + datetime.now().strftime("%d-%m-%H-%M")
+save_path = "outputs/imagenet-niid-fedmix-cnn-vgg-" + datetime.now().strftime(
+    "%d-%m-%H-%M"
+)
 
 with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
     writer = csv.writer(f)
@@ -237,20 +239,20 @@ for i in range(num_iterations):
     for client in clients:
         client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
-    if i > 20:
-        for client in clients:
-            client.distill(2)
+    # if i > 20:
+    for client in clients:
+        client.distill(2)
 
-        distillnet_distributed_accuracy = sum(
-            [evaluate(client.distillnet, client.testloader) for client in clients]
-        ) / len(clients)
+    distillnet_distributed_accuracy = sum(
+        [evaluate(client.distillnet, client.testloader) for client in clients]
+    ) / len(clients)
 
-        distillnet_central_accuracy = sum(
-            [evaluate(client.distillnet, centralised_dataloader) for client in clients]
-        ) / len(clients)
-    else:
-        distillnet_distributed_accuracy = 0
-        distillnet_central_accuracy = 0
+    distillnet_central_accuracy = sum(
+        [evaluate(client.distillnet, centralised_dataloader) for client in clients]
+    ) / len(clients)
+    # else:
+    #     distillnet_distributed_accuracy = 0
+    #     distillnet_central_accuracy = 0
 
     print(f"Distillnet Central Accuracy: {distillnet_central_accuracy}")
     print(f"Distillnet Distributed Accuracy: {distillnet_distributed_accuracy}")
