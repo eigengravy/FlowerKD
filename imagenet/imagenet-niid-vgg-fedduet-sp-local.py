@@ -225,7 +225,7 @@ class Client:
                 inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.distilloptimizer.zero_grad()
                 outputs = self.distillnet(inputs)
-                loss = self.distillcriterion(outputs, labels, self.fednet(inputs))
+                loss = self.distillcriterion(outputs, self.fednet(inputs))
                 loss.backward()
                 self.distilloptimizer.step()
 
@@ -273,7 +273,9 @@ def average_weights(w):
 centralised_fednet_accuracies = []
 distributed_distillnet_accuracies = []
 
-save_path = "outputs/imagenet-niid-fedmix-vgg-" + datetime.now().strftime("%d-%m-%H-%M")
+save_path = "../outputs/imagenet-niid-fedmix-vgg-" + datetime.now().strftime(
+    "%d-%m-%H-%M"
+)
 
 with open(f"{save_path}-fedmix-local-results.csv", "w") as f:
     writer = csv.writer(f)
