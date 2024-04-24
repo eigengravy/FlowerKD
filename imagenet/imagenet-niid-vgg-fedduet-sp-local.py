@@ -225,7 +225,9 @@ class Client:
                 inputs, labels = batch["image"].to(DEVICE), batch["label"].to(DEVICE)
                 self.distilloptimizer.zero_grad()
                 outputs = self.distillnet(inputs)
-                loss = self.distillcriterion(outputs, self.fednet(inputs))
+                loss = nn.CrossEntropyLoss()(
+                    outputs, labels
+                ) + 2000 * self.distillcriterion(outputs, self.fednet(inputs))
                 loss.backward()
                 self.distilloptimizer.step()
 
