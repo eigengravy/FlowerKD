@@ -88,6 +88,127 @@ class JSDLoss(nn.Module):
         return ce_loss + jsd_loss
 
 
+class Net(nn.Module):
+    def __init__(self, num_classes=200) -> None:
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm1 = nn.BatchNorm2d(64)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm3 = nn.BatchNorm2d(128)
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm4 = nn.BatchNorm2d(128)
+        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm5 = nn.BatchNorm2d(256)
+        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm6 = nn.BatchNorm2d(256)
+        self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm7 = nn.BatchNorm2d(256)
+        self.conv8 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm8 = nn.BatchNorm2d(512)
+        self.conv9 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm9 = nn.BatchNorm2d(512)
+        self.conv10 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm10 = nn.BatchNorm2d(512)
+        self.conv11 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm11 = nn.BatchNorm2d(512)
+        self.conv12 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm12 = nn.BatchNorm2d(512)
+        self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+        # self.batch_norm13 = nn.BatchNorm2d(512)
+        # self.dropout = nn.Dropout(0.5)
+        self.fc = nn.Linear(2048, 2048)
+        # self.dropout1 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(2048, 512)
+        self.fc2 = nn.Linear(512, num_classes)
+
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = F.relu(
+            F.batch_norm(
+                self.conv1(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv2(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv3(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv4(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv5(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv6(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv7(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv8(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv9(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv10(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv11(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = F.relu(
+            F.batch_norm(
+                self.conv12(x), running_mean=None, running_var=None, training=True
+            )
+        )
+        x = self.pool(
+            F.relu(
+                F.batch_norm(
+                    self.conv13(x), running_mean=None, running_var=None, training=True
+                )
+            )
+        )
+        x = x.view(-1, 2048)
+        x = F.relu(self.fc(F.dropout(x, 0.5)))
+        x = F.relu(self.fc1(F.dropout(x, 0.5)))
+        x = self.fc2(x)
+
+        return x
+
+
 def train(  # pylint: disable=too-many-arguments
     net: nn.Module,
     trainloader: DataLoader,
@@ -99,9 +220,7 @@ def train(  # pylint: disable=too-many-arguments
     num_classes: int,
 ) -> None:
     criterion = JSDLoss(num_classes=num_classes, tau=tau, beta=beta)
-    global_net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes).to(
-        device=device
-    )
+    global_net = Net(num_classes).to(device=device)
 
     global_net_state_dict = copy.deepcopy(net.state_dict())
     # fix_state_dict(global_net_state_dict)
@@ -122,6 +241,20 @@ def train(  # pylint: disable=too-many-arguments
 def test(
     net: nn.Module, testloader: DataLoader, device: torch.device
 ) -> Tuple[float, float]:
+    """Evaluate the network on the entire test set.
+    Parameters
+    ----------
+    net : nn.Module
+        The neural network to test.
+    testloader : DataLoader
+        The DataLoader containing the data to test the network on.
+    device : torch.device
+        The device on which the model should be tested, either 'cpu' or 'cuda'.
+    Returns
+    -------
+    Tuple[float, float]
+        The loss and the accuracy of the input model on the given data.
+    """
     criterion = torch.nn.CrossEntropyLoss()
     correct, total, loss = 0, 0, 0.0
     net.eval()
@@ -148,7 +281,7 @@ class FlowerClient(fl.client.NumPyClient):
 
         self.trainloader = trainloader
         self.valloader = valloader
-        self.model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=200)
+        self.model = Net(num_classes=200)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
@@ -227,7 +360,7 @@ def get_evaluate_fn(
     def evaluate_fn(
         server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
-        model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=200)
+        model = Net(num_classes=200)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
