@@ -31,16 +31,15 @@ class JSDLoss(nn.Module):
         with torch.no_grad():
             q = global_logits.view(-1, global_logits.size(-1)).log_softmax(-1)
         m = 0.5 * (p + q)
-        return ce_loss + 0.5 * (self.kl(m, p) + self.kl(m, q))
+        jsd_loss = 0.5 * (self.kl(m, p) + self.kl(m, q))
+        print(f"CE Loss: {ce_loss} | JSD Loss: {jsd_loss}")
+        return ce_loss + jsd_loss
 
 
 class DistillNet(nn.Module):
     def __init__(self, num_classes=200) -> None:
         super(DistillNet, self).__init__()
-        m = ResNet(BasicBlock, [1, 1, 1, 1])
-        m.avgpool = torch.nn.AdaptiveAvgPool2d(1)
-        m.fc.out_features = 200
-        self.model = m
+        self.model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
