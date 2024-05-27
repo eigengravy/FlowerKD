@@ -37,7 +37,6 @@ import numpy as np
 import datasets
 from flwr.common.typing import NDArrayFloat
 from flwr_datasets.partitioner import DirichletPartitioner
-from torchvision.models.resnet import BasicBlock, ResNet
 
 
 def apply_transforms(batch):
@@ -66,6 +65,29 @@ def fix_state_dict(state_dict):
             del state_dict[key]
 
 
+from torchvision.models.resnet import BasicBlock, ResNet
+
+
+class JSDLoss(nn.Module):
+    def __init__(self, num_classes=200, tau=3, beta=1):
+        super(JSDLoss, self).__init__()
+        self.num_classes = num_classes
+        self.tau = tau
+        self.beta = beta
+        self.ce = nn.CrossEntropyLoss()
+        self.kl = nn.KLDivLoss(reduction="batchmean", log_target=True)
+
+    def forward(self, local_logits, targets, global_logits):
+        ce_loss = self.ce(local_logits, targets)
+        p = local_logits.view(-1, local_logits.size(-1)).log_softmax(-1)
+        with torch.no_grad():
+            q = global_logits.view(-1, global_logits.size(-1)).log_softmax(-1)
+        m = 0.5 * (p + q)
+        jsd_loss = 0.5 * (self.kl(m, p) + self.kl(m, q))
+        print(f"CE Loss: {ce_loss} | JSD Loss: {jsd_loss}")
+        return ce_loss + jsd_loss
+
+
 class Net(nn.Module):
     def __init__(self, num_classes=200) -> None:
         super(Net, self).__init__()
@@ -85,24 +107,6 @@ def train(  # pylint: disable=too-many-arguments
     beta: float,
     num_classes: int,
 ) -> None:
-    """Train the network on the training set.
-    Parameters
-    ----------
-    net : nn.Module
-        The neural network to train.
-    trainloader : DataLoader
-        The DataLoader containing the data to train the network on.
-    device : torch.device
-        The device on which the model should be trained, either 'cpu' or 'cuda'.
-    epochs : int
-        The number of epochs the model should be trained for.
-    learning_rate : float
-        The learning rate for the SGD optimizer.
-    tau : float
-        Parameter for tau.
-    beta : float
-        Parameter for beta.
-    """
     criterion = JSDLoss(num_classes=num_classes, tau=tau, beta=beta)
     global_net = Net(num_classes).to(device=device)
 
@@ -155,26 +159,6 @@ def test(
     loss /= len(testloader.dataset)
     accuracy = correct / total
     return loss, accuracy
-
-
-class JSDLoss(nn.Module):
-    def __init__(self, num_classes=200, tau=3, beta=1):
-        super(JSDLoss, self).__init__()
-        self.num_classes = num_classes
-        self.tau = tau
-        self.beta = beta
-        self.ce = nn.CrossEntropyLoss()
-        self.kl = nn.KLDivLoss(reduction="batchmean", log_target=True)
-
-    def forward(self, local_logits, targets, global_logits):
-        ce_loss = self.ce(local_logits, targets)
-        p = local_logits.view(-1, local_logits.size(-1)).log_softmax(-1)
-        with torch.no_grad():
-            q = global_logits.view(-1, global_logits.size(-1)).log_softmax(-1)
-        m = 0.5 * (p + q)
-        jsd_loss = 0.5 * (self.kl(m, p) + self.kl(m, q))
-        print(f"CE Loss: {ce_loss} | JSD Loss: {jsd_loss}")
-        return ce_loss + jsd_loss
 
 
 class FlowerClient(fl.client.NumPyClient):
@@ -420,7 +404,7 @@ def main() -> None:
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
         config=fl.server.ServerConfig(num_rounds=50),
-        client_resources={"num_cpus": 2, "num_gpus": 1},
+        client_resources={"num_cpus": 2, "num_gpus": 0.5},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
@@ -428,7 +412,7 @@ def main() -> None:
     print("................")
     print(history)
 
-    save_path = "outputs/imagenet-niid-fedmi-" + datetime.now().strftime("%d-%m-%H-%M")
+    save_path = "imagenet-niid-fedmi-aa-" + datetime.now().strftime("%d-%m-%H-%M")
 
     save_results_as_pickle(history, file_path=save_path, extra_results={})
     plot_metric_from_history(
