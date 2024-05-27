@@ -88,15 +88,6 @@ class JSDLoss(nn.Module):
         return ce_loss + jsd_loss
 
 
-class Net(nn.Module):
-    def __init__(self, num_classes=200) -> None:
-        super(Net, self).__init__()
-        self.model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
-
-
 def train(  # pylint: disable=too-many-arguments
     net: nn.Module,
     trainloader: DataLoader,
@@ -108,7 +99,9 @@ def train(  # pylint: disable=too-many-arguments
     num_classes: int,
 ) -> None:
     criterion = JSDLoss(num_classes=num_classes, tau=tau, beta=beta)
-    global_net = Net(num_classes).to(device=device)
+    global_net = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes).to(
+        device=device
+    )
 
     global_net_state_dict = copy.deepcopy(net.state_dict())
     # fix_state_dict(global_net_state_dict)
@@ -129,20 +122,6 @@ def train(  # pylint: disable=too-many-arguments
 def test(
     net: nn.Module, testloader: DataLoader, device: torch.device
 ) -> Tuple[float, float]:
-    """Evaluate the network on the entire test set.
-    Parameters
-    ----------
-    net : nn.Module
-        The neural network to test.
-    testloader : DataLoader
-        The DataLoader containing the data to test the network on.
-    device : torch.device
-        The device on which the model should be tested, either 'cpu' or 'cuda'.
-    Returns
-    -------
-    Tuple[float, float]
-        The loss and the accuracy of the input model on the given data.
-    """
     criterion = torch.nn.CrossEntropyLoss()
     correct, total, loss = 0, 0, 0.0
     net.eval()
@@ -169,7 +148,7 @@ class FlowerClient(fl.client.NumPyClient):
 
         self.trainloader = trainloader
         self.valloader = valloader
-        self.model = Net(num_classes=200)
+        self.model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=200)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
@@ -248,7 +227,7 @@ def get_evaluate_fn(
     def evaluate_fn(
         server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
     ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
-        model = Net(num_classes=200)
+        model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=200)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
         params_dict = zip(model.state_dict().keys(), parameters)
