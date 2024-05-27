@@ -18,6 +18,7 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class JSDLoss(nn.Module):
     def __init__(self, num_classes=200, tau=3, beta=1):
+        super(JSDLoss, self).__init__()
         self.num_classes = num_classes
         self.tau = tau
         self.beta = beta
