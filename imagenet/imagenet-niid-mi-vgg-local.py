@@ -176,21 +176,21 @@ for i in range(num_iterations):
         client.train(2)
 
     global_fednet = Net().to(DEVICE)
-    client_weights = [client.fednet.state_dict() for client in clients]
+    client_weights = [client.net.state_dict() for client in clients]
     global_weights = average_weights(client_weights)
     global_fednet.load_state_dict(global_weights)
 
     fednet_central_accuracy = evaluate(global_fednet, centralised_dataloader)
 
     fednet_distributed_accuracy = sum(
-        [evaluate(client.fednet, client.testloader) for client in clients]
+        [evaluate(client.net, client.testloader) for client in clients]
     ) / len(clients)
 
     print(f"Fednet Central Accuracy: {fednet_central_accuracy}")
     print(f"Fednet Distributed Accuracy: {fednet_distributed_accuracy}")
 
     for client in clients:
-        client.fednet.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
+        client.net.load_state_dict(copy.deepcopy(global_fednet.state_dict()))
 
     with open(f"{save_path}-results.csv", "a") as f:
         writer = csv.writer(f)
