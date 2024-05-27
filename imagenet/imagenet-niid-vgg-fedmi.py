@@ -420,7 +420,7 @@ def main() -> None:
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
         config=fl.server.ServerConfig(num_rounds=50),
-        client_resources={"num_cpus": 1, "num_gpus": 2},
+        client_resources={"num_cpus": 2, "num_gpus": 1},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
     )
