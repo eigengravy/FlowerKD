@@ -441,9 +441,10 @@ class FlowerClient(fl.client.NumPyClient):
 
     def set_parameters(self, parameters):
         """Change the parameters of the model using the given ones."""
-        params_dict = zip(self.model.state_dict().keys(), parameters)
+        keys = [k for k in self.model.state_dict().keys() if "bn" not in k]
+        params_dict = zip(keys, parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        self.model.load_state_dict(state_dict)
+        self.model.load_state_dict(state_dict, strict=False)
 
     def get_parameters(self, config: Dict[str, Scalar]):
         """Return the parameters of the current net."""
