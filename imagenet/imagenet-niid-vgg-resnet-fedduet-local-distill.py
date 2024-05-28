@@ -58,10 +58,7 @@ class NTDLoss(nn.Module):
 class DistillNet(nn.Module):
     def __init__(self, num_classes=200) -> None:
         super(DistillNet, self).__init__()
-        m = ResNet(BasicBlock, [1, 1, 1, 1])
-        m.avgpool = torch.nn.AdaptiveAvgPool2d(1)
-        m.fc.out_features = 200
-        self.model = m
+        self.model = ResNet(BasicBlock, [1, 1, 1, 1], num_classes=200)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
