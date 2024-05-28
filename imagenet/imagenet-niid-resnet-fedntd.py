@@ -65,162 +65,162 @@ def fix_state_dict(state_dict):
             del state_dict[key]
 
 
-class Net(nn.Module):
-    def __init__(self, num_classes=200) -> None:
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm1 = nn.BatchNorm2d(64)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm3 = nn.BatchNorm2d(128)
-        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm4 = nn.BatchNorm2d(128)
-        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm5 = nn.BatchNorm2d(256)
-        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm6 = nn.BatchNorm2d(256)
-        self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm7 = nn.BatchNorm2d(256)
-        self.conv8 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm8 = nn.BatchNorm2d(512)
-        self.conv9 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm9 = nn.BatchNorm2d(512)
-        self.conv10 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm10 = nn.BatchNorm2d(512)
-        self.conv11 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm11 = nn.BatchNorm2d(512)
-        self.conv12 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm12 = nn.BatchNorm2d(512)
-        self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
-        # self.batch_norm13 = nn.BatchNorm2d(512)
-        # self.dropout = nn.Dropout(0.5)
-        self.fc = nn.Linear(2048, 2048)
-        # self.dropout1 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(2048, 512)
-        self.fc2 = nn.Linear(512, num_classes)
+# class Net(nn.Module):
+#     def __init__(self, num_classes=200) -> None:
+#         super(Net, self).__init__()
+#         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm1 = nn.BatchNorm2d(64)
+#         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm2 = nn.BatchNorm2d(64)
+#         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm3 = nn.BatchNorm2d(128)
+#         self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm4 = nn.BatchNorm2d(128)
+#         self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm5 = nn.BatchNorm2d(256)
+#         self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm6 = nn.BatchNorm2d(256)
+#         self.conv7 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm7 = nn.BatchNorm2d(256)
+#         self.conv8 = nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm8 = nn.BatchNorm2d(512)
+#         self.conv9 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm9 = nn.BatchNorm2d(512)
+#         self.conv10 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm10 = nn.BatchNorm2d(512)
+#         self.conv11 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm11 = nn.BatchNorm2d(512)
+#         self.conv12 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm12 = nn.BatchNorm2d(512)
+#         self.conv13 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1)
+#         # self.batch_norm13 = nn.BatchNorm2d(512)
+#         # self.dropout = nn.Dropout(0.5)
+#         self.fc = nn.Linear(2048, 2048)
+#         # self.dropout1 = nn.Dropout(0.5)
+#         self.fc1 = nn.Linear(2048, 512)
+#         self.fc2 = nn.Linear(512, num_classes)
 
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+#         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x = F.relu(self.conv1(x))
-        # x = self.pool(F.relu((self.conv2(x))))
-        # x = F.relu((self.conv3(x)))
-        # x = self.pool(F.relu((self.conv4(x))))
-        # x = F.relu((self.conv5(x)))
-        # x = F.relu((self.conv6(x)))
-        # x = self.pool(F.relu((self.conv7(x))))
-        # x = F.relu((self.conv8(x)))
-        # x = F.relu((self.conv9(x)))
-        # x = self.pool(F.relu((self.conv10(x))))
-        # x = F.relu((self.conv11(x)))
-        # x = F.relu((self.conv12(x)))
-        # x = self.pool(F.relu((self.conv13(x))))
-        # x = x.view(-1, 2048)
-        # x = F.relu(self.fc(x))
-        # x = F.relu(self.fc1(x))
-        # x = self.fc2(x)
-        # return x
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         # x = F.relu(self.conv1(x))
+#         # x = self.pool(F.relu((self.conv2(x))))
+#         # x = F.relu((self.conv3(x)))
+#         # x = self.pool(F.relu((self.conv4(x))))
+#         # x = F.relu((self.conv5(x)))
+#         # x = F.relu((self.conv6(x)))
+#         # x = self.pool(F.relu((self.conv7(x))))
+#         # x = F.relu((self.conv8(x)))
+#         # x = F.relu((self.conv9(x)))
+#         # x = self.pool(F.relu((self.conv10(x))))
+#         # x = F.relu((self.conv11(x)))
+#         # x = F.relu((self.conv12(x)))
+#         # x = self.pool(F.relu((self.conv13(x))))
+#         # x = x.view(-1, 2048)
+#         # x = F.relu(self.fc(x))
+#         # x = F.relu(self.fc1(x))
+#         # x = self.fc2(x)
+#         # return x
 
-        x = F.relu(
-            F.batch_norm(
-                self.conv1(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = self.pool(
-            F.relu(
-                F.batch_norm(
-                    self.conv2(x), running_mean=None, running_var=None, training=True
-                )
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv3(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = self.pool(
-            F.relu(
-                F.batch_norm(
-                    self.conv4(x), running_mean=None, running_var=None, training=True
-                )
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv5(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv6(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = self.pool(
-            F.relu(
-                F.batch_norm(
-                    self.conv7(x), running_mean=None, running_var=None, training=True
-                )
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv8(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv9(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = self.pool(
-            F.relu(
-                F.batch_norm(
-                    self.conv10(x), running_mean=None, running_var=None, training=True
-                )
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv11(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = F.relu(
-            F.batch_norm(
-                self.conv12(x), running_mean=None, running_var=None, training=True
-            )
-        )
-        x = self.pool(
-            F.relu(
-                F.batch_norm(
-                    self.conv13(x), running_mean=None, running_var=None, training=True
-                )
-            )
-        )
-        x = x.view(-1, 2048)
-        x = F.relu(self.fc(F.dropout(x, 0.5)))
-        x = F.relu(self.fc1(F.dropout(x, 0.5)))
-        x = self.fc2(x)
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv1(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = self.pool(
+#             F.relu(
+#                 F.batch_norm(
+#                     self.conv2(x), running_mean=None, running_var=None, training=True
+#                 )
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv3(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = self.pool(
+#             F.relu(
+#                 F.batch_norm(
+#                     self.conv4(x), running_mean=None, running_var=None, training=True
+#                 )
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv5(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv6(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = self.pool(
+#             F.relu(
+#                 F.batch_norm(
+#                     self.conv7(x), running_mean=None, running_var=None, training=True
+#                 )
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv8(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv9(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = self.pool(
+#             F.relu(
+#                 F.batch_norm(
+#                     self.conv10(x), running_mean=None, running_var=None, training=True
+#                 )
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv11(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = F.relu(
+#             F.batch_norm(
+#                 self.conv12(x), running_mean=None, running_var=None, training=True
+#             )
+#         )
+#         x = self.pool(
+#             F.relu(
+#                 F.batch_norm(
+#                     self.conv13(x), running_mean=None, running_var=None, training=True
+#                 )
+#             )
+#         )
+#         x = x.view(-1, 2048)
+#         x = F.relu(self.fc(F.dropout(x, 0.5)))
+#         x = F.relu(self.fc1(F.dropout(x, 0.5)))
+#         x = self.fc2(x)
 
-        return x
-        # out = self.layer1(x)
-        # out = self.layer2(out)
-        # out = self.layer3(out)
-        # out = self.layer4(out)
-        # out = self.layer5(out)
-        # out = self.layer6(out)
-        # out = self.layer7(out)
-        # out = self.layer8(out)
-        # out = self.layer9(out)
-        # out = self.layer10(out)
-        # out = self.layer11(out)
-        # out = self.layer12(out)
-        # out = self.layer13(out)
-        # out = out.reshape(out.size(0), -1)
-        # out = self.fc(out)
-        # out = self.fc1(out)
-        # out = self.fc2(out)
-        # return out
+#         return x
+#         # out = self.layer1(x)
+#         # out = self.layer2(out)
+# out = self.layer3(out)
+# out = self.layer4(out)
+# out = self.layer5(out)
+# out = self.layer6(out)
+# out = self.layer7(out)
+# out = self.layer8(out)
+# out = self.layer9(out)
+# out = self.layer10(out)
+# out = self.layer11(out)
+# out = self.layer12(out)
+# out = self.layer13(out)
+# out = out.reshape(out.size(0), -1)
+# out = self.fc(out)
+# out = self.fc1(out)
+# out = self.fc2(out)
+# return out
 
 
 class ResidualBlock(nn.Module):
@@ -447,7 +447,11 @@ class FlowerClient(fl.client.NumPyClient):
 
     def get_parameters(self, config: Dict[str, Scalar]):
         """Return the parameters of the current net."""
-        return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
+        return [
+            val.cpu().numpy()
+            for name, val in self.model.state_dict().items()
+            if "bn" not in name
+        ]
 
     def fit(self, parameters, config):
         """Implement distributed fit function for a given client."""
@@ -669,7 +673,7 @@ def main() -> None:
     history = fl.simulation.start_simulation(
         client_fn=get_client_fn(mnist_fds),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=100),
+        config=fl.server.ServerConfig(num_rounds=50),
         client_resources={"num_cpus": 2, "num_gpus": 0.5},
         strategy=strategy,
         actor_kwargs={"on_actor_init_fn": disable_progress_bar},
